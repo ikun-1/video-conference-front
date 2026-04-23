@@ -1,0 +1,148 @@
+---
+description: Vue 3 + TypeScript + Pinia + Element Plus + Tailwind 项目规范
+globs: src/**/*.vue,src/**/*.ts
+alwaysApply: false
+---
+# Vue 3 + TypeScript + UI 规范
+
+## 1. AI 响应规则
+
+- 始终用中文回复
+- 只修改用户明确提到的文件，不要顺手重构其他代码
+- 如果需求有歧义，先问清楚再写代码
+- 不要主动创建 README、测试文件或文档
+- 生成代码时尽量简洁，避免不必要的解释性注释
+- Element Plus 负责交互组件（卡片、输入框、按钮、开关、进度、标签等），Tailwind 负责整体布局、配色和响应式层次。
+
+## 2. 技术栈约定
+
+项目技术栈固定为：
+
+- Vue 3
+- Vite
+- TypeScript
+- Vue Router
+- Pinia
+- Element Plus
+- Tailwind CSS
+- HTTP 请求统一放在 `src/api/`
+- 共享类型统一放在 `src/types/`
+
+## 3. 目录结构约定
+
+推荐结构如下：
+
+```text
+src/
+├── components/
+├── views/
+├── layouts/
+├── composables/
+├── stores/
+│   ├── index.ts
+│   └── user.ts
+├── api/
+│   └── user.ts
+├── types/
+│   └── user.ts
+├── utils/
+├── App.vue
+└── main.ts
+```
+
+说明：
+
+- `components/` 放通用组件
+- `views/` 放页面级组件
+- `layouts/` 放布局组件
+- `stores/` 放 Pinia 状态
+- `api/` 放接口调用
+- `types/` 放业务类型定义
+- `utils/` 放工具函数
+
+## 4. TypeScript 规范
+
+- **禁止使用 `any`**
+- 不确定类型时优先使用 `unknown`，再配合类型守卫处理
+- 复杂类型优先抽离到 `src/types/`
+- 优先使用 `interface` 表达对象结构
+- `type` 用于联合类型、工具类型、条件类型等场景
+- 所有函数尽量写明确返回类型，哪怕是 `void`
+- 组件 `Props` 和 `Emits` 必须使用 TypeScript 声明
+
+## 5. Pinia 规范
+
+- 使用 Composition API 风格定义 store
+- `state` 用 `ref` / `reactive`
+- `getter` 用 `computed`
+- `actions` 用普通函数，支持 `async/await`
+- `stores/index.ts` 作为统一出口文件
+
+## 6. API / Store / Types 分层规范
+
+### API 层（`src/api/`）
+
+- 所有接口调用统一放在 `src/api/`
+- API 文件只负责请求和接口相关类型，不要混入状态管理逻辑
+- 会被多个文件复用的类型放在 `src/types/`
+- 只服务单个接口、且不会复用的小类型可以留在对应 API 文件内部
+- 接口返回值建议使用明确的泛型类型
+- 如果一个 API 文件中的类型已经被组件或 store 复用，优先提取到 `src/types/`
+
+### Store 层（`src/stores/`）
+
+- Store 只负责状态、派生状态、业务动作和本地缓存协同
+- 不要把具体的接口请求逻辑散落到组件里；优先由 API 层调用，再由 Store 接收结果
+- 认证类 store 可以负责：
+  - 保存/恢复 token
+  - 保存/恢复用户信息
+  - 记住密码
+  - 退出登录清理缓存
+- `stores/index.ts` 作为统一出口文件，供外部统一导入
+
+### Types 层（`src/types/`）
+
+- 业务中会被组件、API、Store 共同使用的类型统一放在 `src/types/`
+- 用户、登录结果、表单提交结果、列表项结构等，只要有复用价值就优先抽到这里
+- 不要把明显会复用的核心类型散落在 API 或组件内部
+
+## 9. 模板规范
+
+- 不要在 `{{ }}` 里写复杂表达式
+- 不要在模板中直接写复杂计算逻辑
+- `v-for` 必须带稳定且唯一的 `:key`
+- 正确区分 `v-if` 和 `v-show`
+
+### 响应式原则
+
+- 移动优先
+- 常用断点：`sm`、`md`、`lg`、`xl`
+- 布局尽量使用 Tailwind 的响应式类完成
+
+## 7. 命名规范
+
+- 组件文件名：PascalCase
+- 文件夹名：kebab-case
+- 变量/函数名：camelCase
+- 常量：UPPER_SNAKE_CASE
+- 组合式函数：以 `use` 开头
+- 类型/接口：PascalCase
+- 枚举：尽量不用，优先使用映射对象
+
+## 8. 性能规范
+
+- 路由按需懒加载
+- 大组件使用动态导入
+- 避免深层嵌套组件
+- 合理使用 `shallowRef`
+- 只在需要时使用 `v-once`
+- 复用 Tailwind 类时可使用 `@apply` 提取
+
+## 9. 安全规范
+
+- 用户输入必须校验和清理
+- 敏感配置使用环境变量
+- API 通信优先 HTTPS
+- token 存储方式应优先考虑更安全方案
+- 不要在前端暴露敏感信息
+- 修改完代码请运行：npm run type-check
