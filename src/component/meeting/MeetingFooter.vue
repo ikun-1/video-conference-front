@@ -24,7 +24,7 @@ interface MeetingFooterProps {
   isScreenSharing: boolean
   isRecording: boolean
   isHandRaised: boolean
-  isSpeakerMuted: boolean
+  isSpeakerMuted?: boolean
   cameraDevices?: DeviceItem[]
   microphoneDevices?: DeviceItem[]
   speakerDevices?: DeviceItem[]
@@ -38,6 +38,7 @@ const props = withDefaults(defineProps<MeetingFooterProps>(), {
   cameraDevices: () => [],
   microphoneDevices: () => [],
   speakerDevices: () => [],
+  isSpeakerMuted: false,
 })
 
 

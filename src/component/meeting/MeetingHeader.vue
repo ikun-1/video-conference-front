@@ -12,6 +12,7 @@ interface MainMeetingHeaderProps {
   roomNo: number
   hostName: string
   myRole: string
+  screenSharerName?: string
 }
 
 const props = withDefaults(defineProps<MainMeetingHeaderProps>(), {
@@ -22,6 +23,7 @@ const props = withDefaults(defineProps<MainMeetingHeaderProps>(), {
   roomNo: 852372,
   hostName: '李老师',
   myRole: '成员',
+  screenSharerName: '',
 })
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
@@ -59,15 +61,15 @@ const currentUserAvatar = computed(() => user.value?.avatar || '')
         <span class="max-w-[96px] truncate leading-none">{{ currentUserName }}</span>
       </div>
 
-      <div class="flex items-center space-x-2 rounded bg-white/5 px-2 py-1 text-xs text-slate-200">
+      <div v-if="screenSharerName" class="flex items-center space-x-2 rounded bg-white/5 px-2 py-1 text-xs text-slate-200">
         <div
           class="flex h-6 w-6 items-center justify-center rounded-full bg-[#0052D9] text-[10px] font-bold text-white">
-          {{ hostName?.[0] || '主' }}
+          {{ screenSharerName[0] || '主' }}
         </div>
         <div class="flex min-w-0 items-center">
           <i aria-hidden="true" class="iconfont icon-pc mr-1 inline-flex items-center text-blue-400 leading-none"
             style="font-size: 12px; line-height: 1;" />
-          <span class="truncate leading-none">{{ hostName || '主持人' }} 正在共享屏幕</span>
+          <span class="truncate leading-none">{{ screenSharerName }} 正在共享屏幕</span>
         </div>
       </div>
 

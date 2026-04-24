@@ -4,9 +4,9 @@ import { useAuthStore } from '@/stores/auth'
 import router from '@/router'
 
 export interface ApiResponse<T = unknown> {
-  Code: number
-  Msg: string
-  Data: T
+  code: number
+  msg: string
+  data: T
 }
 
 const instance = axios.create({
@@ -27,18 +27,18 @@ instance.interceptors.request.use(config => {
 
 instance.interceptors.response.use(
   (response) => {
-    const { Code, Msg, Data } = response.data
+    const { code, msg, data } = response.data
 
-    if (Code !== 0) {
-      ElMessage({ message: Msg || '请求失败', type: 'error' })
-      if (Code === 401 || Code === 1002) {
+    if (code !== 0) {
+      ElMessage({ message: msg || '请求失败', type: 'error' })
+      if (code === 401 || code === 1002) {
         useAuthStore().clearAuth()
         router.push('/login')
       }
-      return Promise.reject(new Error(Msg))
+      return Promise.reject(new Error(msg))
     }
 
-    return Data
+    return data
   },
   error => {
     if (error.response) {
@@ -46,21 +46,21 @@ instance.interceptors.response.use(
       const data = error.response.data
       switch (status) {
         case 401:
-          ElMessage({ message: data?.Msg || '登录已过期，请重新登录', type: 'error' })
+          ElMessage({ message: data?.msg || '登录已过期，请重新登录', type: 'error' })
           useAuthStore().clearAuth()
           router.push('/login')
           break
         case 403:
-          ElMessage({ message: data?.Msg || '没有权限访问', type: 'error' })
+          ElMessage({ message: data?.msg || '没有权限访问', type: 'error' })
           break
         case 404:
-          ElMessage({ message: data?.Msg || '请求的资源不存在', type: 'error' })
+          ElMessage({ message: data?.msg || '请求的资源不存在', type: 'error' })
           break
         case 500:
-          ElMessage({ message: data?.Msg || '服务器错误，请稍后重试', type: 'error' })
+          ElMessage({ message: data?.msg || '服务器错误，请稍后重试', type: 'error' })
           break
         default:
-          ElMessage({ message: data?.Msg || `请求失败(${status})`, type: 'error' })
+          ElMessage({ message: data?.msg || `请求失败(${status})`, type: 'error' })
       }
     } else if (error.code === 'ECONNABORTED') {
       ElMessage({ message: '请求超时，请检查网络', type: 'error' })

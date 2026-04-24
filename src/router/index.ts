@@ -2,8 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
 import HomeLayout from '@/layout/HomeLayout.vue'
-// import { useAuthStore } from '@/stores/auth'
-
+import { useAuthStore } from '@/stores/auth'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -15,7 +14,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: HomeLayout,
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: true },
     children: [
       { path: '', name: 'home', component: () => import('@/views/home/HomeView.vue') },
       {
@@ -34,27 +33,27 @@ const routes: RouteRecordRaw[] = [
     path: '/meeting/:roomNo',
     name: 'meeting',
     component: () => import('@/views/meeting/MeetingView.vue'),
-    meta: { requiresAuth: false },
-  }
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  routes,
 })
 
-// router.beforeEach(to => {
-//   const authStore = useAuthStore()
+router.beforeEach(to => {
+  const authStore = useAuthStore()
 
-//   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-//     return { name: 'login' }
-//   }
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return { name: 'login' }
+  }
 
-//   if (to.name === 'login' && authStore.isAuthenticated) {
-//     return { name: 'home' }
-//   }
+  if (to.name === 'login' && authStore.isAuthenticated) {
+    return { name: 'home' }
+  }
 
-//   return true
-// })
+  return true
+})
 
 export default router

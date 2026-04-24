@@ -1,27 +1,34 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import { useMeetingSession } from '@/composables/useMeetingSession'
+import { endMeetingApi } from '@/api/meeting'
 import MeetingHeader from '@/component/meeting/MeetingHeader.vue'
 import MeetingMainArea from '@/component/meeting/MeetingMainArea.vue'
 import MeetingFooter from '@/component/meeting/MeetingFooter.vue'
 
+const router = useRouter()
+const route = useRoute()
+const roomNo = Number(route.params.roomNo)
+
 const {
-  roomTitle, roomNo, hostName, myRole,
-  isMuted, isCamOff, isScreenSharing, isRecording, isHandRaised, isSpeakerMuted,
+  roomTitle, hostName, myRole,
+  isMuted, isCamOff, isScreenSharing, isRecording, isHandRaised,
   networkLabel, networkDelay,
   cameraDevices, microphoneDevices, speakerDevices,
   selectedCameraDeviceId, selectedMicrophoneDeviceId, selectedSpeakerDeviceId,
-  remoteAudioStream,
+  localStream, remoteStreams, remoteAudioStream, cameraError,
   participants, selectedParticipantId, selectedParticipant,
-  toggleMic, toggleCam, toggleSpeaker,
+  participantNames, screenSharerName, chatMessages, myClientId,
+  init, cleanup,
+  toggleMic, toggleCam,
   toggleShare, toggleRecord, raiseHand,
+  sendChatMessage,
   selectCameraDevice, selectMicrophoneDevice, selectSpeakerDevice,
   selectParticipant,
-} = useMeetingSession()
+} = useMeetingSession(roomNo)
 
-const router = useRouter()
 const rightPanelMode = ref<'members' | 'chat'>('members')
 const isWebFullscreen = ref(false)
 const isWidescreen = ref(false)
@@ -62,18 +69,44 @@ function handleToggleWidescreen() {
   }
 }
 
-function handleLeaveMeeting() {
-  ElMessageBox.confirm('确定要退出会议吗？', '退出会议', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(() => {
-    // todo 关闭各种媒体流，清理状态等
-    router.push('/')
-  }).catch(() => {
-    /* 取消退出，不做任何操作 */
-  })
+async function handleLeaveMeeting() {
+  try {
+    await ElMessageBox.confirm('确定要退出会议吗？', '退出会议', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+
+  try {
+    await endMeetingApi(roomNo)
+  } catch {
+    // Non-host or network error — still leave
+  }
+
+  cleanup()
+  router.push('/')
 }
+
+function handleSendChatMessage(text: string) {
+  sendChatMessage(text)
+}
+
+onMounted(() => {
+  init()
+})
+
+watch(cameraError, (msg) => {
+  if (msg) {
+    ElMessage.warning({ message: msg, duration: 6000 })
+  }
+})
+
+onUnmounted(() => {
+  cleanup()
+})
 </script>
 
 <template>
@@ -91,6 +124,7 @@ function handleLeaveMeeting() {
         :room-no="roomNo"
         :host-name="hostName"
         :my-role="myRole"
+        :screen-sharer-name="screenSharerName"
       />
     </template>
 
@@ -101,9 +135,15 @@ function handleLeaveMeeting() {
       :right-panel-mode="rightPanelMode"
       :is-web-fullscreen="isWebFullscreen"
       :is-widescreen="isWidescreen"
+      :local-stream="localStream"
+      :remote-streams="remoteStreams"
+      :participant-names="participantNames"
+      :chat-messages="chatMessages"
+      :my-client-id="myClientId"
       @select-participant="selectParticipant"
       @toggle-web-fullscreen="handleToggleWebFullscreen"
       @toggle-widescreen="handleToggleWidescreen"
+      @send-chat-message="handleSendChatMessage"
     />
 
     <template v-if="!isWebFullscreen">
@@ -113,7 +153,6 @@ function handleLeaveMeeting() {
         :is-screen-sharing="isScreenSharing"
         :is-recording="isRecording"
         :is-hand-raised="isHandRaised"
-        :is-speaker-muted="isSpeakerMuted"
         :camera-devices="cameraDevices"
         :microphone-devices="microphoneDevices"
         :speaker-devices="speakerDevices"
@@ -123,7 +162,7 @@ function handleLeaveMeeting() {
         :remote-audio-stream="remoteAudioStream"
         @toggle-mic="toggleMic"
         @toggle-cam="toggleCam"
-        @toggle-speaker="toggleSpeaker"
+        @toggle-speaker="() => {}"
         @toggle-share="toggleShare"
         @toggle-record="toggleRecord"
         @raise-hand="raiseHand"

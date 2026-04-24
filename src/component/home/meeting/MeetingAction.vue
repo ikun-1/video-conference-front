@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { ArrowDown, Calendar, Lightning, Monitor, Plus } from '@element-plus/icons-vue'
+import { createMeetingApi, joinMeetingApi } from '@/api/meeting'
 
 interface QuickAction {
   title: string
@@ -22,8 +25,11 @@ interface CreateMeetingForm {
   meetingPassword: string
 }
 
+const router = useRouter()
 const joinDialogVisible = ref(false)
 const createDialogVisible = ref(false)
+const loading = ref(false)
+
 const joinForm = reactive<JoinMeetingForm>({
   meetingNumber: '',
   participantName: '',
@@ -44,7 +50,7 @@ const quickActions: QuickAction[] = [
   { title: '共享屏幕', icon: 'monitor' },
 ]
 
-const canJoin = computed(() => joinForm.meetingNumber.trim().length > 0 && joinForm.participantName.trim().length > 0)
+const canJoin = computed(() => joinForm.meetingNumber.trim().length > 0)
 const canCreate = computed(() => createForm.meetingTitle.trim().length > 0 && (!createForm.usePassword || createForm.meetingPassword.trim().length > 0))
 
 function handleActionClick(title: string): void {
@@ -57,18 +63,40 @@ function handleActionClick(title: string): void {
   }
 }
 
-function handleJoinMeeting(): void {
+async function handleJoinMeeting(): Promise<void> {
   if (!canJoin.value) return
 
-  // TODO: 这里接入真正的入会逻辑
-  joinDialogVisible.value = false
+  loading.value = true
+  try {
+    const roomNo = await joinMeetingApi({
+      roomNo: Number(joinForm.meetingNumber),
+      password: joinForm.meetingPassword || undefined,
+    })
+    joinDialogVisible.value = false
+    router.push(`/meeting/${roomNo}`)
+  } catch {
+    // Error handled by Axios interceptor
+  } finally {
+    loading.value = false
+  }
 }
 
-function handleCreateMeeting(): void {
+async function handleCreateMeeting(): Promise<void> {
   if (!canCreate.value) return
 
-  // TODO: 这里接入真正的创建会议逻辑
-  createDialogVisible.value = false
+  loading.value = true
+  try {
+    const roomNo = await createMeetingApi({
+      title: createForm.meetingTitle,
+      password: createForm.meetingPassword || undefined,
+    })
+    createDialogVisible.value = false
+    router.push(`/meeting/${roomNo}`)
+  } catch {
+    // Error handled by Axios interceptor
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -132,11 +160,6 @@ function handleCreateMeeting(): void {
           </div>
 
           <div>
-            <label class="mb-2 block text-sm font-medium text-slate-700">参会名</label>
-            <el-input v-model="joinForm.participantName" placeholder="请输入参会名" size="large" clearable />
-          </div>
-
-          <div>
             <label class="mb-2 block text-sm font-medium text-slate-700">会议密码</label>
             <el-input
               v-model="joinForm.meetingPassword"
@@ -164,7 +187,7 @@ function handleCreateMeeting(): void {
 
         <div class="mt-6 flex justify-end gap-3">
           <el-button @click="joinDialogVisible = false">取消</el-button>
-          <el-button type="primary" :disabled="!canJoin" @click="handleJoinMeeting">加入会议</el-button>
+          <el-button type="primary" :disabled="!canJoin" :loading="loading" @click="handleJoinMeeting">加入会议</el-button>
         </div>
       </div>
     </el-dialog>
@@ -220,7 +243,7 @@ function handleCreateMeeting(): void {
 
         <div class="mt-6 flex justify-end gap-3">
           <el-button @click="createDialogVisible = false">取消</el-button>
-          <el-button type="primary" :disabled="!canCreate" @click="handleCreateMeeting">创建会议</el-button>
+          <el-button type="primary" :disabled="!canCreate" :loading="loading" @click="handleCreateMeeting">创建会议</el-button>
         </div>
       </div>
     </el-dialog>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref, onUnmounted } from 'vue'
+import { onMounted, ref, onUnmounted, computed, nextTick, watch } from 'vue'
 import { Microphone, Mute } from '@element-plus/icons-vue'
 import type { MeetingParticipant } from '@/types/meeting'
+import type { ChatMessage } from '@/composables/useMeetingSession'
 
 interface MeetingMainAreaProps {
   participants: MeetingParticipant[]
@@ -10,24 +11,62 @@ interface MeetingMainAreaProps {
   rightPanelMode?: 'members' | 'chat'
   isWebFullscreen?: boolean
   isWidescreen?: boolean
+  localStream?: MediaStream | null
+  remoteStreams?: Map<string, MediaStream> | null
+  participantNames?: Map<string, string>
+  chatMessages?: ChatMessage[]
+  myClientId?: string
 }
 
 const props = withDefaults(defineProps<MeetingMainAreaProps>(), {
   rightPanelMode: 'members',
   isWebFullscreen: false,
   isWidescreen: false,
+  localStream: null,
+  remoteStreams: null,
+  participantNames: undefined,
+  chatMessages: () => [],
+  myClientId: '',
 })
 
 const emit = defineEmits<{
   selectParticipant: [participantId: string]
   toggleWebFullscreen: []
   toggleWidescreen: []
+  sendChatMessage: [text: string]
 }>()
 
 const rightPanelWidth = ref(280)
 const isFullscreen = ref(false)
 const isResizing = ref(false)
 const videoContainerRef = ref<HTMLElement>()
+const chatContainerRef = ref<HTMLElement>()
+const chatInput = ref('')
+// Auto-scroll chat on new messages
+watch(() => props.chatMessages?.length, () => {
+  nextTick(() => {
+    if (chatContainerRef.value) {
+      chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight
+    }
+  })
+})
+
+function getStreamForParticipant(id: string): MediaStream | null | undefined {
+  if (props.remoteStreams && props.remoteStreams.has(id)) {
+    return props.remoteStreams.get(id)
+  }
+  return null
+}
+
+const selectedParticipantStream = computed(() => {
+  if (!props.selectedParticipant) return localStream.value
+  // Check if selected participant has a remote stream
+  const remote = getStreamForParticipant(props.selectedParticipant.id)
+  if (remote) return remote
+  return localStream.value
+})
+
+const localStream = computed(() => props.localStream)
 
 function startResize(e: MouseEvent) {
   e.preventDefault()
@@ -83,6 +122,13 @@ function toggleFullscreen() {
   }
 }
 
+function handleSendChatMessage() {
+  const text = chatInput.value.trim()
+  if (!text) return
+  emit('sendChatMessage', text)
+  chatInput.value = ''
+}
+
 onMounted(() => {
   document.addEventListener('fullscreenchange', onFullscreenChange)
 })
@@ -94,13 +140,12 @@ onMounted(() => {
     <div ref="videoContainerRef" class="group relative flex flex-1 items-center justify-center overflow-hidden bg-[#0a0a0a] video-container">
       <template v-if="selectedParticipant">
         <video
-          v-if="!selectedParticipant.isCamOff"
+          v-if="getStreamForParticipant(selectedParticipant.id) || (selectedParticipant.id === myClientId && localStream)"
           class="h-full w-full object-contain"
-          src="@/assets/default-video.mp4"
+          :srcObject="getStreamForParticipant(selectedParticipant.id) || localStream"
           autoplay
           muted
           playsinline
-          loop="true"
         />
         <div v-else class="flex h-full w-full items-center justify-center">
           <div class="text-center">
@@ -185,13 +230,12 @@ onMounted(() => {
             @click="emit('selectParticipant', participant.id)"
           >
             <video
-              v-if="!participant.isCamOff"
+              v-if="!participant.isCamOff && (getStreamForParticipant(participant.id) || (participant.id === myClientId && localStream))"
               class="h-full w-full object-cover"
-              src="@/assets/default-video.mp4"
+              :srcObject="getStreamForParticipant(participant.id) || localStream"
               autoplay
               muted
               playsinline
-              loop="true"
             />
             <div v-else class="flex h-full w-full items-center justify-center bg-gray-800">
               <span class="text-3xl text-slate-500">{{ participant.displayName[0] }}</span>
@@ -238,20 +282,31 @@ onMounted(() => {
           聊天
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 text-sm text-slate-400">
-          <p class="text-center">暂无消息</p>
+        <div ref="chatContainerRef" class="flex-1 space-y-3 overflow-y-auto p-4 text-sm">
+          <div v-for="(msg, i) in chatMessages" :key="i"
+            :class="['flex', msg.fromClientId === myClientId ? 'justify-end' : 'justify-start']">
+            <div :class="['max-w-[80%] rounded-lg px-3 py-2',
+              msg.fromClientId === myClientId ? 'bg-blue-600 text-white' : 'bg-white/10 text-slate-200']">
+              <div class="mb-1 text-xs opacity-70">{{ msg.displayName }}</div>
+              <div>{{ msg.text }}</div>
+            </div>
+          </div>
+          <div v-if="!chatMessages.length" class="pt-8 text-center text-slate-500">暂无消息</div>
         </div>
 
         <div class="flex-shrink-0 border-t border-white/10 p-3">
           <div class="flex gap-2">
             <input
+              v-model="chatInput"
               class="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-500"
               placeholder="输入消息..."
               type="text"
+              @keyup.enter="handleSendChatMessage"
             />
             <button
               class="flex-shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700"
               type="button"
+              @click="handleSendChatMessage"
             >
               发送
             </button>
