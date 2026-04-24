@@ -68,6 +68,10 @@ export interface UserJoinedData {
   isHost: boolean
 }
 
+export interface UserLeftData {
+  clientId: string
+}
+
 export interface RenegotiationOffer {
   sdp: string
 }

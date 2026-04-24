@@ -12,6 +12,7 @@ interface MeetingMainAreaProps {
   isWebFullscreen?: boolean
   isWidescreen?: boolean
   localStream?: MediaStream | null
+  screenStream?: MediaStream | null
   remoteStreams?: Map<string, MediaStream> | null
   participantNames?: Map<string, string>
   chatMessages?: ChatMessage[]
@@ -23,6 +24,7 @@ const props = withDefaults(defineProps<MeetingMainAreaProps>(), {
   isWebFullscreen: false,
   isWidescreen: false,
   localStream: null,
+  screenStream: null,
   remoteStreams: null,
   participantNames: undefined,
   chatMessages: () => [],
@@ -66,7 +68,10 @@ const selectedParticipantStream = computed(() => {
   return localStream.value
 })
 
-const localStream = computed(() => props.localStream)
+const localStream = computed(() => {
+  // When screen sharing, show screen content instead of camera
+  return props.screenStream ?? props.localStream
+})
 
 function startResize(e: MouseEvent) {
   e.preventDefault()

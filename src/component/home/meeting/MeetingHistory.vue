@@ -39,7 +39,7 @@ function joinMeeting(roomNo: number) {
 
 <template>
   <div class="px-16">
-    <div class="text-5xl font-semibold tracking-tight text-slate-800">{{ meetings.length ? formatDate(meetings[0].createdAt) : '暂无会议' }}</div>
+    <div class="text-5xl font-semibold tracking-tight text-slate-800">{{ meetings.length ? formatDate(meetings[0]?.createdAt ?? '') : '暂无会议' }}</div>
     <div class="mt-3 text-sm text-slate-700">{{ new Date().toLocaleDateString('zh-CN', { weekday: 'long' }) }}</div>
 
     <div class="mt-6 flex items-center">

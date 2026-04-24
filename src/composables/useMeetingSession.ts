@@ -126,7 +126,7 @@ export function useMeetingSession(roomNo: number) {
     }))
 
     if (state.participants.length > 0) {
-      state.selectedParticipantId = state.participants[0].id
+      state.selectedParticipantId = state.participants[0]!.id
     }
 
     // Await offer creation so the PC state is consistent before processing next messages

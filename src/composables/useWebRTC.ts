@@ -217,7 +217,7 @@ export function useWebRTC() {
       }
 
       // Listen for stop (user clicks "Stop sharing" in browser UI)
-      screenTrack.onended = () => {
+      screenTrack!.onended = () => {
         stopScreenShare()
       }
     } catch (err) {
@@ -251,7 +251,8 @@ export function useWebRTC() {
       video: { deviceId: { exact: deviceId } },
       audio: false,
     })
-    const [newVideoTrack] = newStream.getVideoTracks()
+    const newVideoTrack = newStream.getVideoTracks()[0]
+    if (!newVideoTrack) return
     const [oldVideoTrack] = localStream.value.getVideoTracks()
 
     if (oldVideoTrack) {
@@ -275,7 +276,8 @@ export function useWebRTC() {
       audio: { deviceId: { exact: deviceId } },
       video: false,
     })
-    const [newAudioTrack] = newStream.getAudioTracks()
+    const newAudioTrack = newStream.getAudioTracks()[0]
+    if (!newAudioTrack) return
     const [oldAudioTrack] = localStream.value.getAudioTracks()
 
     if (oldAudioTrack) {

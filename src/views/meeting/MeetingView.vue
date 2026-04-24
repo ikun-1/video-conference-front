@@ -18,7 +18,7 @@ const {
   networkLabel, networkDelay,
   cameraDevices, microphoneDevices, speakerDevices,
   selectedCameraDeviceId, selectedMicrophoneDeviceId, selectedSpeakerDeviceId,
-  localStream, remoteStreams, remoteAudioStream, cameraError,
+  localStream, remoteStreams, screenStream, remoteAudioStream, cameraError,
   participants, selectedParticipantId, selectedParticipant,
   participantNames, screenSharerName, chatMessages, myClientId,
   init, cleanup,
@@ -137,6 +137,7 @@ onUnmounted(() => {
       :is-widescreen="isWidescreen"
       :local-stream="localStream"
       :remote-streams="remoteStreams"
+      :screen-stream="screenStream"
       :participant-names="participantNames"
       :chat-messages="chatMessages"
       :my-client-id="myClientId"
