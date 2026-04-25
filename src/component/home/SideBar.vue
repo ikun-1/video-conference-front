@@ -44,6 +44,8 @@ function isActive(names: string[]): boolean {
     return route.name != null && names.includes(String(route.name))
 }
 
+const isProfileActive = computed(() => route.name === 'profile')
+
 function handleLogout() {
     ElMessageBox.confirm('确定要退出登录吗？', '提示', {
         confirmButtonText: '确定',
@@ -60,6 +62,10 @@ function handleLogout() {
         })
 }
 
+function goProfile() {
+    router.push({ name: 'profile' })
+}
+
 </script>
 
 <template>
@@ -67,7 +73,8 @@ function handleLogout() {
         <div class="flex flex-col items-center gap-2 px-1 text-center">
             <div class="relative">
                 <div
-                    class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-white shadow-sm">
+                    class="relative flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-slate-100 bg-white shadow-sm"
+                    :class="isProfileActive ? 'ring-2 ring-blue-200' : ''" @click="goProfile">
                     <img v-if="currentUser.avatar" :src="currentUser.avatar" alt="用户头像"
                         class="h-full w-full object-cover" />
                     <el-icon v-else :size="20" class="text-slate-800">
@@ -75,7 +82,7 @@ function handleLogout() {
                     </el-icon>
                 </div>
             </div>
-            <p class="w-full truncate text-xs font-medium text-slate-600">{{ currentUser.name }}</p>
+            <p class="w-full cursor-pointer truncate text-xs font-medium text-slate-600" @click="goProfile">{{ currentUser.name }}</p>
         </div>
 
         <div class="mt-14 flex flex-col items-center gap-8">
@@ -102,7 +109,8 @@ function handleLogout() {
                 </el-icon>
             </button>
             <button
-                class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-50">
+                class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-50"
+                :class="isProfileActive ? 'bg-blue-50 text-blue-600' : ''" @click="goProfile">
                 <el-icon :size="18">
                     <Setting />
                 </el-icon>

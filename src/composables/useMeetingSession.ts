@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { getMeetingInfoApi } from '@/api/meeting'
 import { useWebRTC } from './useWebRTC'
 import { useSignaling, type ConnectionState } from './useSignaling'
-import type { MeetingParticipant, ParticipantInfo, RoomJoinedData, RecordingControlData } from '@/types/meeting'
+import type { MeetingParticipant, ParticipantInfo, RoomJoinedData, UserJoinedData, RecordingControlData } from '@/types/meeting'
 
 export interface ChatMessage {
   fromClientId: string
@@ -123,6 +123,7 @@ export function useMeetingSession(roomNo: number) {
     state.participants = data.participants.map((p: ParticipantInfo) => ({
       id: p.clientId,
       displayName: p.displayName,
+      avatar: p.avatar,
       isMuted: p.isMuted,
       isCamOff: p.isCamOff,
       isHost: p.isHost,
@@ -138,13 +139,14 @@ export function useMeetingSession(roomNo: number) {
     signaling.sendOffer(offer)
   }
 
-  function handleUserJoined(data: { clientId: string; displayName: string; isHost: boolean }) {
+  function handleUserJoined(data: UserJoinedData) {
     const exists = state.participants.find(p => p.id === data.clientId)
     if (exists) return
 
     state.participants.push({
       id: data.clientId,
       displayName: data.displayName,
+      avatar: data.avatar,
       isMuted: false,
       isCamOff: false,
       isHost: data.isHost,

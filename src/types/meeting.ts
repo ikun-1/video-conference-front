@@ -52,6 +52,7 @@ export interface WsServerMessage {
 export interface ParticipantInfo {
   clientId: string
   displayName: string
+  avatar?: string
   isHost: boolean
   isMuted: boolean
   isCamOff: boolean
@@ -66,6 +67,7 @@ export interface RoomJoinedData {
 export interface UserJoinedData {
   clientId: string
   displayName: string
+  avatar?: string
   isHost: boolean
 }
 
