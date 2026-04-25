@@ -6,6 +6,7 @@ import type {
   UserLeftData,
   ParticipantInfo,
   RenegotiationOffer,
+  RecordingControlData,
 } from '@/types/meeting'
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected'
@@ -21,6 +22,7 @@ interface SignalingCallbacks {
   onScreenShareStarted?: (data: { clientId: string }) => void
   onScreenShareStopped?: (data: { clientId: string }) => void
   onChatMessage?: (data: { fromClientId: string; displayName: string; text: string }) => void
+  onRecordingStateChanged?: (data: RecordingControlData) => void
   onError?: (message: string) => void
 }
 
@@ -131,6 +133,10 @@ export function useSignaling() {
       case 'chat-message':
         callbacks.onChatMessage?.(msg.data as { fromClientId: string; displayName: string; text: string })
         break
+      case 'recording-started':
+      case 'recording-stopped':
+        callbacks.onRecordingStateChanged?.(msg.data as RecordingControlData)
+        break
       case 'error':
         callbacks.onError?.(msg.data as string)
         break
@@ -181,6 +187,10 @@ export function useSignaling() {
     sendMessage({ type: 'chat-message', text })
   }
 
+  function sendRecordingControl(action: 'start' | 'stop') {
+    sendMessage({ type: 'recording-control', action })
+  }
+
   function setCallbacks(cbs: SignalingCallbacks) {
     callbacks = cbs
   }
@@ -209,6 +219,7 @@ export function useSignaling() {
     sendScreenShareStart,
     sendScreenShareStop,
     sendChatMessage,
+    sendRecordingControl,
     setCallbacks,
   }
 }

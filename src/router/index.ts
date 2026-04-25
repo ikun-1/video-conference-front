@@ -27,6 +27,11 @@ const routes: RouteRecordRaw[] = [
         name: 'recording',
         component: () => import('@/views/home/RecordingView.vue'),
       },
+      {
+        path: 'recording/:id/play',
+        name: 'recording-play',
+        component: () => import('@/views/home/RecordingPlayView.vue'),
+      },
     ],
   },
   {

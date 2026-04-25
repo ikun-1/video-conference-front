@@ -24,6 +24,7 @@ interface MeetingFooterProps {
   isScreenSharing: boolean
   isRecording: boolean
   isHandRaised: boolean
+  isHost?: boolean
   isSpeakerMuted?: boolean
   cameraDevices?: DeviceItem[]
   microphoneDevices?: DeviceItem[]
@@ -233,7 +234,7 @@ function handleSelectMicrophone(deviceId: string): void {
         <span class="mt-1 text-xs text-slate-300">共享屏幕</span>
       </button>
 
-      <button class="flex flex-col items-center" type="button" @click="emit('toggleRecord')">
+      <button v-if="props.isHost" class="flex flex-col items-center" type="button" @click="emit('toggleRecord')">
         <div class="flex h-12 w-12 items-center justify-center rounded-xl text-white transition-all"
           :class="props.isRecording ? 'bg-red-600/30 text-red-500' : 'bg-white/10 hover:bg-red-600'">
           <svg aria-hidden="true" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">

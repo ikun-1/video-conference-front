@@ -13,8 +13,8 @@ const route = useRoute()
 const roomNo = Number(route.params.roomNo)
 
 const {
-  roomTitle, hostName, myRole,
-  isMuted, isCamOff, isScreenSharing, isRecording, isHandRaised,
+  roomTitle, hostName, myRole, isHost,
+  isMuted, isCamOff, isScreenSharing, isRecording, recordingStartedAt, isHandRaised,
   networkLabel, networkDelay,
   cameraDevices, microphoneDevices, speakerDevices,
   selectedCameraDeviceId, selectedMicrophoneDeviceId, selectedSpeakerDeviceId,
@@ -118,6 +118,7 @@ onUnmounted(() => {
     <template v-if="!isWebFullscreen">
       <MeetingHeader
         :is-recording="isRecording"
+        :recording-started-at="recordingStartedAt"
         :network-label="networkLabel"
         :network-delay="networkDelay"
         :room-title="roomTitle"
@@ -154,6 +155,7 @@ onUnmounted(() => {
         :is-screen-sharing="isScreenSharing"
         :is-recording="isRecording"
         :is-hand-raised="isHandRaised"
+        :is-host="isHost"
         :camera-devices="cameraDevices"
         :microphone-devices="microphoneDevices"
         :speaker-devices="speakerDevices"

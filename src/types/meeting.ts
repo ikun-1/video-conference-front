@@ -41,6 +41,7 @@ export interface WsClientMessage {
   muted?: boolean
   kind?: string
   text?: string
+  action?: string
 }
 
 export interface WsServerMessage {
@@ -74,4 +75,38 @@ export interface UserLeftData {
 
 export interface RenegotiationOffer {
   sdp: string
+}
+
+// ---------- Recording types ----------
+
+export interface RecordingInfo {
+  id: number
+  roomNo: number
+  title: string
+  startedAt: string
+  endedAt: string
+  durationMs: number
+  status: string
+  fileCount: number
+}
+
+export interface RecordingFileInfo {
+  id: number
+  clientId: string
+  displayName: string
+  kind: string
+  codec: string
+  fileSize: number
+  downloadUrl: string
+  playableUrl?: string
+}
+
+export interface RecordingDetail extends RecordingInfo {
+  files: RecordingFileInfo[]
+}
+
+export interface RecordingControlData {
+  action: 'started' | 'stopped'
+  startedAt?: string
+  durationMs?: number
 }

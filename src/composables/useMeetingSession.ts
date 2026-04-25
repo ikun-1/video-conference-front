@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { getMeetingInfoApi } from '@/api/meeting'
 import { useWebRTC } from './useWebRTC'
 import { useSignaling, type ConnectionState } from './useSignaling'
-import type { MeetingParticipant, ParticipantInfo, RoomJoinedData } from '@/types/meeting'
+import type { MeetingParticipant, ParticipantInfo, RoomJoinedData, RecordingControlData } from '@/types/meeting'
 
 export interface ChatMessage {
   fromClientId: string
@@ -24,6 +24,7 @@ export function useMeetingSession(roomNo: number) {
     participants: [] as MeetingParticipant[],
     selectedParticipantId: '',
     isRecording: false,
+    recordingStartedAt: 0, // Date.now() when recording started, 0 = inactive
     isHandRaised: false,
     networkLabel: '网络',
     networkDelay: 0,
@@ -47,6 +48,8 @@ export function useMeetingSession(roomNo: number) {
     const sharer = state.participants.find(p => p.isScreenSharing)
     return sharer?.displayName ?? ''
   })
+
+  const isHost = computed(() => state.hostName === auth.user?.nickname)
 
   async function init() {
     if (!roomNo || isNaN(roomNo)) {
@@ -73,6 +76,7 @@ export function useMeetingSession(roomNo: number) {
       onScreenShareStarted: handleScreenShareStarted,
       onScreenShareStopped: handleScreenShareStopped,
       onChatMessage: handleChatMessage,
+      onRecordingStateChanged: handleRecordingStateChanged,
       onError: handleError,
     })
 
@@ -202,6 +206,16 @@ export function useMeetingSession(roomNo: number) {
     })
   }
 
+  function handleRecordingStateChanged(data: RecordingControlData) {
+    if (data.action === 'started') {
+      state.isRecording = true
+      state.recordingStartedAt = Date.now()
+    } else if (data.action === 'stopped') {
+      state.isRecording = false
+      state.recordingStartedAt = 0
+    }
+  }
+
   function handleError(msg: string) {
     console.error('Signaling error:', msg)
   }
@@ -229,7 +243,11 @@ export function useMeetingSession(roomNo: number) {
   }
 
   function toggleRecord() {
-    state.isRecording = !state.isRecording
+    if (state.isRecording) {
+      signaling.sendRecordingControl('stop')
+    } else {
+      signaling.sendRecordingControl('start')
+    }
   }
 
   function raiseHand() {
@@ -273,11 +291,13 @@ export function useMeetingSession(roomNo: number) {
     selectedParticipant,
     selectedParticipantId: computed(() => state.selectedParticipantId),
     myRole: computed(() => state.hostName === auth.user?.nickname ? '主持人' : '成员'),
+    isHost,
 
     isMuted: computed(() => webrtc.isMuted.value),
     isCamOff: computed(() => webrtc.isCamOff.value),
     isScreenSharing: computed(() => webrtc.isScreenSharing.value),
     isRecording: computed(() => state.isRecording),
+    recordingStartedAt: computed(() => state.recordingStartedAt),
     isHandRaised: computed(() => state.isHandRaised),
     networkLabel: computed(() => state.networkLabel),
     networkDelay: computed(() => state.networkDelay),

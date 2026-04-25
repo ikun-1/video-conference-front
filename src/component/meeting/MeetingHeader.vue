@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { DocumentCopy } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 
 interface MainMeetingHeaderProps {
   isRecording: boolean
+  recordingStartedAt?: number
   networkLabel: string
   networkDelay: number
   roomTitle: string
@@ -17,6 +18,7 @@ interface MainMeetingHeaderProps {
 
 const props = withDefaults(defineProps<MainMeetingHeaderProps>(), {
   isRecording: false,
+  recordingStartedAt: 0,
   networkLabel: '网络',
   networkDelay: 15,
   roomTitle: '软工2024 毕业设计答辩',
@@ -47,6 +49,31 @@ const signalStrength = computed(() => {
 
 const currentUserName = computed(() => user.value?.nickname || user.value?.username || '未登录用户')
 const currentUserAvatar = computed(() => user.value?.avatar || '')
+
+// Timer tick to refresh elapsed display every second
+const tick = ref(0)
+let timer: ReturnType<typeof setInterval> | null = null
+
+onMounted(() => {
+  timer = setInterval(() => {
+    tick.value++
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (timer) clearInterval(timer)
+})
+
+// Re-evaluates every tick because recordingStartedAt is read through tick
+const formattedElapsed = computed(() => {
+  void tick.value // force reactivity
+  if (!props.recordingStartedAt) return '00:00:00'
+  const totalSec = Math.floor((Date.now() - props.recordingStartedAt) / 1000)
+  const h = Math.floor(totalSec / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  const s = totalSec % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+})
 </script>
 
 <template>
@@ -75,7 +102,7 @@ const currentUserAvatar = computed(() => user.value?.avatar || '')
 
       <div v-if="isRecording" class="flex items-center rounded bg-red-500/20 px-2 py-0.5 text-xs text-red-500">
         <span class="mr-2 h-2 w-2 animate-pulse rounded-full bg-red-500" />
-        REC 01:24:45
+        REC {{ formattedElapsed }}
       </div>
     </div>
 

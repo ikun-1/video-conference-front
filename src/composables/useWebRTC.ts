@@ -22,6 +22,17 @@ export function useWebRTC() {
   let onIceCandidateHandler: ((candidate: RTCIceCandidateInit) => void) | null = null
   let onTrackHandler: ((stream: MediaStream, clientId?: string) => void) | null = null
 
+  function applyCodecPreferences(transceiver: RTCRtpTransceiver, kind: 'audio' | 'video') {
+    const caps = RTCRtpSender.getCapabilities(kind)
+    if (!caps || !caps.codecs?.length) return
+
+    const target = kind === 'video' ? 'video/VP8' : 'audio/opus'
+    const preferred = caps.codecs.filter(c => c.mimeType.toLowerCase() === target.toLowerCase())
+    if (!preferred.length) return
+    const others = caps.codecs.filter(c => c.mimeType.toLowerCase() !== target.toLowerCase())
+    transceiver.setCodecPreferences([...preferred, ...others])
+  }
+
   async function enumerateDevices() {
     const devices = await navigator.mediaDevices.enumerateDevices()
     cameraDevices.value = devices
@@ -63,7 +74,8 @@ export function useWebRTC() {
       if (pc) {
         stream.getTracks().forEach(track => {
           if (pc) {
-            pc.addTransceiver(track, { direction: 'sendrecv' })
+            const transceiver = pc.addTransceiver(track, { direction: 'sendrecv' })
+            applyCodecPreferences(transceiver, track.kind as 'audio' | 'video')
           }
         })
       }
@@ -133,14 +145,17 @@ export function useWebRTC() {
       if (localStream.value) {
         localStream.value.getTracks().forEach(track => {
           if (pc) {
-            pc.addTransceiver(track, { direction: 'sendrecv' })
+            const transceiver = pc.addTransceiver(track, { direction: 'sendrecv' })
+            applyCodecPreferences(transceiver, track.kind as 'audio' | 'video')
           }
         })
       } else {
         // No local media available (e.g. camera already in use by another window).
         // Add recvonly transceivers so we can still receive remote participants' video/audio.
-        pc.addTransceiver('audio', { direction: 'recvonly' })
-        pc.addTransceiver('video', { direction: 'recvonly' })
+        const audioTransceiver = pc.addTransceiver('audio', { direction: 'recvonly' })
+        applyCodecPreferences(audioTransceiver, 'audio')
+        const videoTransceiver = pc.addTransceiver('video', { direction: 'recvonly' })
+        applyCodecPreferences(videoTransceiver, 'video')
       }
     }
 
