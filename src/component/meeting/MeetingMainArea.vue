@@ -17,6 +17,7 @@ interface MeetingMainAreaProps {
   participantNames?: Map<string, string>
   chatMessages?: ChatMessage[]
   myClientId?: string
+  selectedSpeakerDeviceId?: string
 }
 
 const props = withDefaults(defineProps<MeetingMainAreaProps>(), {
@@ -29,6 +30,7 @@ const props = withDefaults(defineProps<MeetingMainAreaProps>(), {
   participantNames: undefined,
   chatMessages: () => [],
   myClientId: '',
+  selectedSpeakerDeviceId: '',
 })
 
 const emit = defineEmits<{
@@ -43,6 +45,7 @@ const isFullscreen = ref(false)
 const isResizing = ref(false)
 const videoContainerRef = ref<HTMLElement>()
 const chatContainerRef = ref<HTMLElement>()
+const mediaOutputElements = ref<HTMLMediaElement[]>([])
 const chatInput = ref('')
 // Auto-scroll chat on new messages
 watch(() => props.chatMessages?.length, () => {
@@ -60,6 +63,28 @@ function getStreamForParticipant(id: string): MediaStream | null | undefined {
   return null
 }
 
+function applySpeakerDeviceId(deviceId: string) {
+  mediaOutputElements.value.forEach(async (element) => {
+    if (typeof element.setSinkId !== 'function') return
+    try {
+      await element.setSinkId(deviceId)
+    } catch (error) {
+      console.warn('Failed to apply speaker device:', error)
+    }
+  })
+}
+
+function registerMediaOutputElement(element: HTMLMediaElement | null) {
+  if (!element) return
+  if (!mediaOutputElements.value.includes(element)) {
+    mediaOutputElements.value.push(element)
+  }
+
+  if (props.selectedSpeakerDeviceId) {
+    void nextTick(() => applySpeakerDeviceId(props.selectedSpeakerDeviceId!))
+  }
+}
+
 const selectedParticipantStream = computed(() => {
   if (!props.selectedParticipant) return localStream.value
   // Check if selected participant has a remote stream
@@ -72,6 +97,15 @@ const localStream = computed(() => {
   // When screen sharing, show screen content instead of camera
   return props.screenStream ?? props.localStream
 })
+
+watch(
+  () => props.selectedSpeakerDeviceId,
+  (deviceId) => {
+    if (!deviceId) return
+    void nextTick(() => applySpeakerDeviceId(deviceId))
+  },
+  { immediate: true }
+)
 
 function startResize(e: MouseEvent) {
   e.preventDefault()
@@ -148,6 +182,7 @@ onMounted(() => {
           v-if="getStreamForParticipant(selectedParticipant.id) || (selectedParticipant.id === myClientId && localStream)"
           class="h-full w-full object-contain"
           :srcObject="getStreamForParticipant(selectedParticipant.id) || localStream"
+          :ref="registerMediaOutputElement"
           autoplay
           :muted="selectedParticipant.id === myClientId"
           playsinline
@@ -238,6 +273,7 @@ onMounted(() => {
               v-if="!participant.isCamOff && (getStreamForParticipant(participant.id) || (participant.id === myClientId && localStream))"
               class="h-full w-full object-cover"
               :srcObject="getStreamForParticipant(participant.id) || localStream"
+              :ref="registerMediaOutputElement"
               autoplay
               :muted="participant.id === myClientId"
               playsinline

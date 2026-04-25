@@ -142,6 +142,7 @@ onUnmounted(() => {
       :participant-names="participantNames"
       :chat-messages="chatMessages"
       :my-client-id="myClientId"
+      :selected-speaker-device-id="selectedSpeakerDeviceId"
       @select-participant="selectParticipant"
       @toggle-web-fullscreen="handleToggleWebFullscreen"
       @toggle-widescreen="handleToggleWidescreen"

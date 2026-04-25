@@ -11,7 +11,6 @@ import {
 } from '@element-plus/icons-vue'
 
 import { ElMessage, ElPopover } from 'element-plus'
-import { ref } from 'vue'
 
 type DeviceItem = {
   deviceId: string
@@ -32,7 +31,6 @@ interface MeetingFooterProps {
   selectedCameraDeviceId?: string
   selectedMicrophoneDeviceId?: string
   selectedSpeakerDeviceId?: string
-  remoteAudioStream?: MediaStream | null
 }
 
 const props = withDefaults(defineProps<MeetingFooterProps>(), {
@@ -59,9 +57,6 @@ const emit = defineEmits<{
   selectSpeakerDevice: [deviceId: string]
 }>()
 
-const remoteAudioRef = ref<HTMLAudioElement>()
-defineExpose({ remoteAudioRef })
-
 function handleToggleMic(): void {
   emit('toggleMic')
   ElMessage({ message: props.isMuted ? '已开启麦克风' : '已关闭麦克风', type: props.isMuted ? 'success' : 'warning' })
@@ -79,18 +74,6 @@ function handleToggleSpeaker(): void {
 
 async function handleSelectSpeaker(deviceId: string): Promise<void> {
   emit('selectSpeakerDevice', deviceId)
-  const audio = remoteAudioRef.value
-  if (!audio || typeof audio.setSinkId !== 'function') {
-    ElMessage({ message: '当前浏览器不支持切换扬声器输出', type: 'warning' })
-    return
-  }
-  try {
-    await audio.setSinkId(deviceId)
-    ElMessage({ message: '扬声器已切换', type: 'success' })
-  } catch (error) {
-    console.warn('切换扬声器失败', error)
-    ElMessage({ message: '扬声器切换失败', type: 'error' })
-  }
 }
 
 function handleSelectMicrophone(deviceId: string): void {
@@ -200,7 +183,6 @@ function handleSelectMicrophone(deviceId: string): void {
         </el-popover>
       </div>
 
-      <audio ref="remoteAudioRef" :muted="props.isSpeakerMuted" autoplay class="hidden" />
     </div>
 
     <div class="flex items-center space-x-8">
