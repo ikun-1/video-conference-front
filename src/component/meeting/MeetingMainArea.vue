@@ -149,7 +149,7 @@ onMounted(() => {
           class="h-full w-full object-contain"
           :srcObject="getStreamForParticipant(selectedParticipant.id) || localStream"
           autoplay
-          muted
+          :muted="selectedParticipant.id === myClientId"
           playsinline
         />
         <div v-else class="flex h-full w-full items-center justify-center">
@@ -239,7 +239,7 @@ onMounted(() => {
               class="h-full w-full object-cover"
               :srcObject="getStreamForParticipant(participant.id) || localStream"
               autoplay
-              muted
+              :muted="participant.id === myClientId"
               playsinline
             />
             <div v-else class="flex h-full w-full items-center justify-center bg-gray-800">

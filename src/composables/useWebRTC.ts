@@ -70,16 +70,6 @@ export function useWebRTC() {
       // Enumerate devices after media starts (labels are populated)
       await enumerateDevices()
 
-      // Add local tracks to peer connection
-      if (pc) {
-        stream.getTracks().forEach(track => {
-          if (pc) {
-            const transceiver = pc.addTransceiver(track, { direction: 'sendrecv' })
-            applyCodecPreferences(transceiver, track.kind as 'audio' | 'video')
-          }
-        })
-      }
-
       return stream
     } catch (err: any) {
       let msg = ''
