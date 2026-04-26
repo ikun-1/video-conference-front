@@ -3,8 +3,6 @@ import {
   ArrowDown,
   Avatar,
   ChatDotRound,
-  Microphone,
-  Mute,
   Monitor,
   MoreFilled,
   PhoneFilled,
@@ -86,21 +84,19 @@ function handleSelectMicrophone(deviceId: string): void {
 <template>
   <footer
     class="relative z-30 flex h-20 items-center justify-between overflow-visible border-t border-white/10 bg-[#1a1a1a] px-8">
-    <div class="flex w-1/4 items-center space-x-4 overflow-hidden rounded-lg">
-      <div class="flex items-center overflow-visible">
-        <button :class="['footer-toggle', props.isMuted ? 'rounded-l-xl bg-red-500/20 text-red-500' : 'rounded-l-xl bg-white/10 hover:bg-white/20']"
-          type="button" @click="handleToggleMic">
-          <el-icon :size="20">
-            <Mute v-if="props.isMuted" />
-            <Microphone v-else />
-          </el-icon>
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center overflow-hidden  rounded-lg">
+        <button :class="[
+          'footer-toggle footer-toggle--left',
+          props.isMuted ? 'footer-toggle--active footer-toggle--danger' : 'footer-toggle--idle',
+        ]" type="button" @click="handleToggleMic">
+          <i :class="['iconfont', props.isMuted ? 'icon-maikefengguanbi' : 'icon-icon_maikefeng']"
+            aria-hidden="true"></i>
           <span class="sr-only">{{ props.isMuted ? '开启麦克风' : '关闭麦克风' }}</span>
         </button>
         <el-popover trigger="click" placement="top" :width="260" teleported>
           <template #reference>
-            <button aria-label="选择麦克风设备"
-              class="flex h-12 w-8 items-center justify-center rounded-r-xl border-l border-white/10 bg-white/5 text-white transition-all hover:bg-white/15"
-              type="button">
+            <button aria-label="选择麦克风设备" class="footer-toggle footer-toggle--right" type="button">
               <el-icon :size="12">
                 <ArrowDown />
               </el-icon>
@@ -110,9 +106,8 @@ function handleSelectMicrophone(deviceId: string): void {
           <div class="rounded-xl bg-[#202020] p-2">
             <div class="mb-2 px-2 text-xs font-semibold text-slate-300">选择麦克风</div>
             <div v-if="!microphoneDevices.length" class="px-3 py-2 text-xs text-slate-400">未检测到麦克风设备</div>
-            <button v-for="device in microphoneDevices" :key="device.deviceId"
-              class="device-option"
-              type="button" @click.stop="handleSelectMicrophone(device.deviceId)">
+            <button v-for="device in microphoneDevices" :key="device.deviceId" class="device-option" type="button"
+              @click.stop="handleSelectMicrophone(device.deviceId)">
               <span class="truncate">{{ device.label || '未知麦克风' }}</span>
               <span v-if="device.deviceId === selectedMicrophoneDeviceId" class="ml-2 text-xs text-blue-400">已选</span>
             </button>
@@ -121,17 +116,17 @@ function handleSelectMicrophone(deviceId: string): void {
       </div>
 
       <div class="flex items-center overflow-hidden rounded-lg">
-        <button :class="['footer-toggle', props.isCamOff ? 'rounded-l-xl bg-red-500/20 text-red-500' : 'rounded-l-xl bg-white/10 hover:bg-white/20']"
-          type="button" @click="handleToggleCam">
+        <button :class="[
+          'footer-toggle footer-toggle--left',
+          props.isCamOff ? 'footer-toggle--active footer-toggle--danger' : 'footer-toggle--idle',
+        ]" type="button" @click="handleToggleCam">
           <i aria-hidden="true" :class="props.isCamOff ? 'iconfont icon-kaiqishipin' : 'iconfont icon-guanbishipin1'"
             class="text-white" style="font-size: 20px; line-height: 1;" />
           <span class="sr-only">{{ props.isCamOff ? '开启视频' : '关闭视频' }}</span>
         </button>
         <el-popover trigger="click" placement="top" :width="256" teleported>
           <template #reference>
-            <button aria-label="选择摄像头设备"
-              class="flex h-12 w-8 items-center justify-center rounded-r-xl border-l border-white/10 bg-white/5 text-white transition-all hover:bg-white/15"
-              type="button">
+            <button aria-label="选择摄像头设备" class="footer-toggle footer-toggle--right" type="button">
               <el-icon :size="12">
                 <ArrowDown />
               </el-icon>
@@ -141,9 +136,8 @@ function handleSelectMicrophone(deviceId: string): void {
           <div class="rounded-xl bg-[#202020] p-2">
             <div class="mb-2 px-2 text-xs font-semibold text-slate-300">选择摄像头</div>
             <div v-if="!cameraDevices.length" class="px-3 py-2 text-xs text-slate-400">未检测到摄像头设备</div>
-            <button v-for="device in cameraDevices" :key="device.deviceId"
-              class="device-option"
-              type="button" @click.stop="emit('selectCameraDevice', device.deviceId)">
+            <button v-for="device in cameraDevices" :key="device.deviceId" class="device-option" type="button"
+              @click.stop="emit('selectCameraDevice', device.deviceId)">
               <span class="truncate">{{ device.label || '未知摄像头' }}</span>
               <span v-if="device.deviceId === selectedCameraDeviceId" class="ml-2 text-xs text-blue-400">已选</span>
             </button>
@@ -152,8 +146,10 @@ function handleSelectMicrophone(deviceId: string): void {
       </div>
 
       <div class="flex items-center overflow-hidden rounded-lg">
-        <button :class="['footer-toggle', props.isSpeakerMuted ? 'rounded-l-xl bg-red-500/20 text-red-500' : 'rounded-l-xl bg-white/10 hover:bg-white/20']"
-          type="button" @click="handleToggleSpeaker">
+        <button :class="[
+          'footer-toggle footer-toggle--left',
+          props.isSpeakerMuted ? 'footer-toggle--active footer-toggle--danger' : 'footer-toggle--idle',
+        ]" type="button" @click="handleToggleSpeaker">
           <i aria-hidden="true"
             :class="props.isSpeakerMuted ? 'iconfont icon-shengyin-guanbi' : 'iconfont icon-shengyindakai'"
             style="font-size: 20px; line-height: 1;" />
@@ -161,9 +157,7 @@ function handleSelectMicrophone(deviceId: string): void {
         </button>
         <el-popover trigger="click" placement="top" :width="260" teleported>
           <template #reference>
-            <button aria-label="选择扬声器设备"
-              class="flex h-12 w-8 items-center justify-center rounded-r-xl border-l border-white/10 bg-white/5 text-white transition-all hover:bg-white/15"
-              type="button">
+            <button aria-label="选择扬声器设备" class="footer-toggle footer-toggle--right" type="button">
               <el-icon :size="12">
                 <ArrowDown />
               </el-icon>
@@ -173,9 +167,8 @@ function handleSelectMicrophone(deviceId: string): void {
           <div class="rounded-xl bg-[#202020] p-2">
             <div class="mb-2 px-2 text-xs font-semibold text-slate-300">选择扬声器</div>
             <div v-if="!speakerDevices.length" class="px-3 py-2 text-xs text-slate-400">未检测到扬声器设备</div>
-            <button v-for="device in speakerDevices" :key="device.deviceId"
-              class="device-option"
-              type="button" @click.stop="handleSelectSpeaker(device.deviceId)">
+            <button v-for="device in speakerDevices" :key="device.deviceId" class="device-option" type="button"
+              @click.stop="handleSelectSpeaker(device.deviceId)">
               <span class="truncate">{{ device.label || '未知扬声器' }}</span>
               <span v-if="device.deviceId === selectedSpeakerDeviceId" class="ml-2 text-xs text-blue-400">已选</span>
             </button>
@@ -185,7 +178,7 @@ function handleSelectMicrophone(deviceId: string): void {
 
     </div>
 
-    <div class="flex items-center space-x-8">
+    <div class="flex  items-center space-x-4">
       <button class="flex flex-col items-center" type="button" @click="emit('openMembers')">
         <div
           class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-white transition-all hover:bg-blue-600/30">
@@ -256,7 +249,27 @@ function handleSelectMicrophone(deviceId: string): void {
 @reference "tailwindcss";
 
 .footer-toggle {
-  @apply flex h-12 w-12 items-center justify-center rounded-none transition-all;
+  @apply flex h-12 items-center justify-center transition-all;
+}
+
+.footer-toggle--left {
+  @apply w-12 rounded-none;
+}
+
+.footer-toggle--right {
+  @apply w-8 border-l border-white/10 bg-white/5 text-white hover:bg-white/15;
+}
+
+.footer-toggle--idle {
+  @apply bg-white/10 hover:bg-white/20;
+}
+
+.footer-toggle--active {
+  @apply text-white;
+}
+
+.footer-toggle--danger {
+  @apply bg-red-500/20 text-red-500;
 }
 
 .device-option {
