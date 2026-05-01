@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { getOverviewStatsApi, getUserStatsApi, getTrendStatsApi } from '@/api/stats'
-import type { OverviewStats, UserStats, TrendStats } from '@/types/stats'
+import { getOverviewStatsApi, getUserStatsApi, getTrendStatsApi, getMeetingQualityReportApi } from '@/api/stats'
+import type { OverviewStats, UserStats, TrendStats, MeetingQualityReport } from '@/types/stats'
 import { storeToRefs } from 'pinia'
 import { DataAnalysis } from '@element-plus/icons-vue'
 
@@ -49,6 +49,49 @@ async function fetchData() {
     // handled by interceptor
   } finally {
     loading.value = false
+  }
+}
+
+// ---- Quality Report ----
+const qualityReport = ref<MeetingQualityReport | null>(null)
+const qualityLoading = ref(false)
+const selectedQualityMeetingId = ref<number | null>(null)
+
+async function loadQualityReport(meetingId: number) {
+  selectedQualityMeetingId.value = meetingId
+  qualityLoading.value = true
+  qualityReport.value = null
+  try {
+    qualityReport.value = await getMeetingQualityReportApi(meetingId)
+  } catch {
+    qualityReport.value = null
+  } finally {
+    qualityLoading.value = false
+  }
+}
+
+function formatPercent(val: number): string {
+  return val.toFixed(2) + '%'
+}
+
+function formatMs(val: number): string {
+  return val.toFixed(1) + ' ms'
+}
+
+function formatKbps(val: number): string {
+  return val.toFixed(0) + ' kbps'
+}
+
+function formatFps(val: number): string {
+  return val.toFixed(1) + ' fps'
+}
+
+function candidateTypeLabel(type: string): string {
+  switch (type) {
+    case 'host': return '本地直连'
+    case 'srflx': return 'STUN反射'
+    case 'relay': return 'TURN中继'
+    default: return type
   }
 }
 
@@ -157,6 +200,98 @@ onMounted(fetchData)
             </template>
           </el-table-column>
         </el-table>
+      </div>
+
+      <!-- Quality Report Section -->
+      <div v-if="myStats && myStats.recentMeetings.length" class="mb-8">
+        <h2 class="mb-4 text-lg font-semibold text-slate-700">会议质量报告</h2>
+        <div class="mb-3 flex flex-wrap gap-2">
+          <el-button
+            v-for="m in myStats.recentMeetings.slice(0, 10)"
+            :key="m.meetingId"
+            :type="selectedQualityMeetingId === m.meetingId ? 'primary' : 'default'"
+            size="small"
+            plain
+            :disabled="qualityLoading"
+            @click="loadQualityReport(m.meetingId)"
+          >
+            {{ m.title || '会议#' + m.roomNo }}
+          </el-button>
+        </div>
+
+        <div v-if="qualityLoading" class="py-10 text-center text-sm text-slate-400">加载质量报告中...</div>
+
+        <div v-else-if="qualityReport" class="space-y-4">
+          <!-- Overall quality metrics -->
+          <el-card shadow="hover" class="!border-slate-100">
+            <template #header>
+              <span class="font-medium text-slate-700">会议总体质量</span>
+            </template>
+            <div class="grid grid-cols-2 gap-4 md:grid-cols-3">
+              <div class="text-center">
+                <div class="text-lg font-semibold text-slate-800">{{ formatMs(qualityReport.overallAvgJitterMs) }}</div>
+                <div class="text-xs text-slate-500">平均抖动</div>
+              </div>
+              <div class="text-center">
+                <div class="text-lg font-semibold text-slate-800">{{ formatMs(qualityReport.overallAvgRttMs) }}</div>
+                <div class="text-xs text-slate-500">平均往返时延</div>
+              </div>
+              <div class="text-center">
+                <div class="text-lg font-semibold text-slate-800">{{ formatPercent(qualityReport.overallAvgPacketLossRate) }}</div>
+                <div class="text-xs text-slate-500">平均丢包率</div>
+              </div>
+            </div>
+            <div v-if="qualityReport.candidateDist.length" class="mt-3 border-t border-slate-100 pt-3">
+              <div class="mb-2 text-xs font-medium text-slate-500">连接类型分布</div>
+              <div class="flex flex-wrap gap-3">
+                <div v-for="c in qualityReport.candidateDist" :key="c.type" class="text-sm">
+                  <el-tag size="small" type="info">{{ candidateTypeLabel(c.type) }}</el-tag>
+                  <span class="ml-1 text-slate-600">{{ c.count }} 次</span>
+                </div>
+              </div>
+            </div>
+          </el-card>
+
+          <!-- Per-user quality -->
+          <div v-for="user in qualityReport.users" :key="user.clientId">
+            <el-card shadow="hover" class="!border-slate-100">
+              <template #header>
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-slate-700">{{ user.displayName || '用户#' + user.userId }}</span>
+                  <el-tag v-if="user.candidateType" size="small" type="info">{{ candidateTypeLabel(user.candidateType) }}</el-tag>
+                </div>
+              </template>
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div v-if="user.audio">
+                  <h4 class="mb-2 text-xs font-medium text-slate-500">音频质量</h4>
+                  <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div><span class="text-slate-400">抖动:</span> <span class="text-slate-700">{{ formatMs(user.audio.avgJitterMs) }}</span></div>
+                    <div><span class="text-slate-400">时延:</span> <span class="text-slate-700">{{ formatMs(user.audio.avgRoundTripMs) }}</span></div>
+                    <div><span class="text-slate-400">丢包:</span> <span class="text-slate-700">{{ user.audio.avgPacketsLost.toFixed(1) }}</span></div>
+                    <div><span class="text-slate-400">采样:</span> <span class="text-slate-700">{{ user.audio.sampleCount }} 次</span></div>
+                  </div>
+                </div>
+                <div v-if="user.video">
+                  <h4 class="mb-2 text-xs font-medium text-slate-500">视频质量</h4>
+                  <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div><span class="text-slate-400">抖动:</span> <span class="text-slate-700">{{ formatMs(user.video.avgJitterMs) }}</span></div>
+                    <div><span class="text-slate-400">时延:</span> <span class="text-slate-700">{{ formatMs(user.video.avgRoundTripMs) }}</span></div>
+                    <div><span class="text-slate-400">丢包:</span> <span class="text-slate-700">{{ user.video.avgPacketsLost.toFixed(1) }}</span></div>
+                    <div><span class="text-slate-400">比特率:</span> <span class="text-slate-700">{{ formatKbps(user.video.avgBitrateKbps) }}</span></div>
+                    <div><span class="text-slate-400">帧率:</span> <span class="text-slate-700">{{ formatFps(user.video.avgFps ?? 0) }}</span></div>
+                    <div v-if="user.video.maxFrameWidth"><span class="text-slate-400">分辨率:</span> <span class="text-slate-700">{{ user.video.maxFrameWidth }}×{{ user.video.maxFrameHeight }}</span></div>
+                    <div><span class="text-slate-400">采样:</span> <span class="text-slate-700">{{ user.video.sampleCount }} 次</span></div>
+                  </div>
+                </div>
+              </div>
+            </el-card>
+          </div>
+
+          <!-- No quality data -->
+          <div v-if="qualityReport.userCount === 0" class="py-10 text-center text-sm text-slate-400">
+            该会议尚无质量数据（会议进行时 WebRTC 质量采集会自动上报）
+          </div>
+        </div>
       </div>
     </template>
   </div>
