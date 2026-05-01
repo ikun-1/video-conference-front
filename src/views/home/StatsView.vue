@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { getOverviewStatsApi, getUserStatsApi, getTrendStatsApi, getMeetingQualityReportApi } from '@/api/stats'
 import type { OverviewStats, UserStats, TrendStats, MeetingQualityReport } from '@/types/stats'
@@ -56,17 +56,21 @@ async function fetchData() {
 const qualityReport = ref<MeetingQualityReport | null>(null)
 const qualityLoading = ref(false)
 const selectedQualityMeetingId = ref<number | null>(null)
+let isUnmounted = false
+
+onUnmounted(() => { isUnmounted = true })
 
 async function loadQualityReport(meetingId: number) {
   selectedQualityMeetingId.value = meetingId
   qualityLoading.value = true
   qualityReport.value = null
   try {
-    qualityReport.value = await getMeetingQualityReportApi(meetingId)
+    const result = await getMeetingQualityReportApi(meetingId)
+    if (!isUnmounted) qualityReport.value = result
   } catch {
-    qualityReport.value = null
+    if (!isUnmounted) qualityReport.value = null
   } finally {
-    qualityLoading.value = false
+    if (!isUnmounted) qualityLoading.value = false
   }
 }
 
@@ -241,7 +245,7 @@ onMounted(fetchData)
                 <div class="text-xs text-slate-500">平均丢包率</div>
               </div>
             </div>
-            <div v-if="qualityReport.candidateDist.length" class="mt-3 border-t border-slate-100 pt-3">
+            <div v-if="qualityReport.candidateDist && qualityReport.candidateDist.length" class="mt-3 border-t border-slate-100 pt-3">
               <div class="mb-2 text-xs font-medium text-slate-500">连接类型分布</div>
               <div class="flex flex-wrap gap-3">
                 <div v-for="c in qualityReport.candidateDist" :key="c.type" class="text-sm">
