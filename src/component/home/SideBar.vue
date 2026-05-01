@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
     CollectionTag,
+    DataAnalysis,
     Message,
     Microphone,
     Setting,
@@ -30,6 +31,7 @@ const sidebarItems: SidebarItem[] = [
     { label: '会议', icon: VideoCamera, to: { name: 'home' }, activeNames: ['home'] },
     { label: '通讯录', icon: CollectionTag, to: { name: 'contacts' }, activeNames: ['contacts'] },
     { label: '录制', icon: Microphone, to: { name: 'recording' }, activeNames: ['recording'] },
+    { label: '统计', icon: DataAnalysis, to: { name: 'stats' }, activeNames: ['stats'] },
 ]
 
 const currentUser = computed(() => ({

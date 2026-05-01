@@ -28,6 +28,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/home/RecordingView.vue'),
       },
       {
+        path: 'stats',
+        name: 'stats',
+        component: () => import('@/views/home/StatsView.vue'),
+      },
+      {
         path: 'recording/:id/play',
         name: 'recording-play',
         component: () => import('@/views/home/RecordingPlayView.vue'),
