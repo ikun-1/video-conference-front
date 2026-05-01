@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { getMeetingInfoApi } from '@/api/meeting'
 import { useWebRTC } from './useWebRTC'
 import { useSignaling, type ConnectionState } from './useSignaling'
+import { useWebRTCStats } from './useWebRTCStats'
 import type { MeetingParticipant, ParticipantInfo, RoomJoinedData, UserJoinedData, RecordingControlData } from '@/types/meeting'
 
 export interface ChatMessage {
@@ -15,6 +16,10 @@ export function useMeetingSession(roomNo: number) {
   const auth = useAuthStore()
   const webrtc = useWebRTC()
   const signaling = useSignaling()
+  const rtcStats = useWebRTCStats(
+    computed(() => webrtc.pc.value),
+    (msg) => signaling.sendRaw(msg),
+  )
 
   const state = reactive({
     roomTitle: '',
@@ -137,6 +142,9 @@ export function useMeetingSession(roomNo: number) {
     // Await offer creation so the PC state is consistent before processing next messages
     const offer = await webrtc.createOffer()
     signaling.sendOffer(offer)
+
+    // Start WebRTC quality stats collection
+    rtcStats.start(7000)
   }
 
   function handleUserJoined(data: UserJoinedData) {
@@ -279,6 +287,7 @@ export function useMeetingSession(roomNo: number) {
   }
 
   function cleanup() {
+    rtcStats.stop()
     webrtc.cleanup()
     signaling.disconnect()
   }

@@ -53,6 +53,46 @@ export interface TrendDay {
   participants: number
 }
 
+export interface QualityMetricSummary {
+  label: string
+  avgPacketsLost: number
+  avgJitterMs: number
+  avgRoundTripMs: number
+  avgBitrateKbps: number
+  minBitrateKbps: number
+  maxBitrateKbps: number
+  avgFps?: number
+  maxFrameWidth?: number
+  maxFrameHeight?: number
+  sampleCount: number
+}
+
+export interface CandidateTypeDistribution {
+  type: string
+  count: number
+}
+
+export interface UserQualitySummary {
+  userId: number
+  clientId: string
+  displayName: string
+  audio?: QualityMetricSummary
+  video?: QualityMetricSummary
+  candidateType?: string
+}
+
+export interface MeetingQualityReport {
+  meetingId: number
+  roomNo: number
+  title: string
+  userCount: number
+  users: UserQualitySummary[]
+  candidateDist: CandidateTypeDistribution[]
+  overallAvgJitterMs: number
+  overallAvgRttMs: number
+  overallAvgPacketLossRate: number
+}
+
 export interface TrendStats {
   days: TrendDay[]
 }

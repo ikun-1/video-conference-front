@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { OverviewStats, MeetingStats, UserStats, TrendStats } from '@/types/stats'
+import type { OverviewStats, MeetingStats, UserStats, TrendStats, MeetingQualityReport } from '@/types/stats'
 
 export function getOverviewStatsApi(): Promise<OverviewStats> {
   return request.get<OverviewStats>('/stats/overview')
@@ -15,4 +15,8 @@ export function getUserStatsApi(userId: number): Promise<UserStats> {
 
 export function getTrendStatsApi(days: number = 7): Promise<TrendStats> {
   return request.get<TrendStats>('/stats/trend', { params: { days } })
+}
+
+export function getMeetingQualityReportApi(meetingId: number): Promise<MeetingQualityReport> {
+  return request.get<MeetingQualityReport>(`/stats/quality/${meetingId}`)
 }

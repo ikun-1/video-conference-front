@@ -18,7 +18,7 @@ export function useWebRTC() {
   const microphoneDevices = ref<DeviceInfo[]>([])
   const speakerDevices = ref<DeviceInfo[]>([])
 
-  let pc: RTCPeerConnection | null = null
+  const pc = ref<RTCPeerConnection | null>(null)
   let onIceCandidateHandler: ((candidate: RTCIceCandidateInit) => void) | null = null
   let onTrackHandler: ((stream: MediaStream, clientId?: string) => void) | null = null
 
@@ -99,15 +99,15 @@ export function useWebRTC() {
   }
 
   function createPeerConnection(iceServers: RTCIceServer[]) {
-    pc = new RTCPeerConnection({ iceServers })
+    pc.value = new RTCPeerConnection({ iceServers })
 
-    pc.onicecandidate = (event) => {
+    pc.value.onicecandidate = (event) => {
       if (event.candidate && onIceCandidateHandler) {
         onIceCandidateHandler(event.candidate.toJSON())
       }
     }
 
-    pc.ontrack = (event) => {
+    pc.value.ontrack = (event) => {
       const [stream] = event.streams
       if (stream) {
         // Backend uses "stream_{clientID}" as stream ID; strip prefix to get actual clientId
@@ -120,56 +120,56 @@ export function useWebRTC() {
       }
     }
 
-    pc.onconnectionstatechange = () => {
-      console.log('PC state:', pc?.connectionState)
+    pc.value.onconnectionstatechange = () => {
+      console.log('PC state:', pc.value?.connectionState)
     }
 
-    return pc
+    return pc.value
   }
 
   async function createOffer(): Promise<RTCSessionDescriptionInit> {
-    if (!pc) throw new Error('PeerConnection not created')
+    if (!pc.value) throw new Error('PeerConnection not created')
 
     // Add transceivers if not already added
-    if (pc.getTransceivers().length === 0) {
+    if (pc.value.getTransceivers().length === 0) {
       if (localStream.value) {
         localStream.value.getTracks().forEach(track => {
-          if (pc) {
-            const transceiver = pc.addTransceiver(track, { direction: 'sendrecv' })
+          if (pc.value) {
+            const transceiver = pc.value.addTransceiver(track, { direction: 'sendrecv' })
             applyCodecPreferences(transceiver, track.kind as 'audio' | 'video')
           }
         })
       } else {
         // No local media available (e.g. camera already in use by another window).
         // Add recvonly transceivers so we can still receive remote participants' video/audio.
-        const audioTransceiver = pc.addTransceiver('audio', { direction: 'recvonly' })
+        const audioTransceiver = pc.value.addTransceiver('audio', { direction: 'recvonly' })
         applyCodecPreferences(audioTransceiver, 'audio')
-        const videoTransceiver = pc.addTransceiver('video', { direction: 'recvonly' })
+        const videoTransceiver = pc.value.addTransceiver('video', { direction: 'recvonly' })
         applyCodecPreferences(videoTransceiver, 'video')
       }
     }
 
-    const offer = await pc.createOffer()
-    await pc.setLocalDescription(offer)
+    const offer = await pc.value.createOffer()
+    await pc.value.setLocalDescription(offer)
     return offer
   }
 
   async function setRemoteDescription(sdp: RTCSessionDescriptionInit) {
-    if (!pc) throw new Error('PeerConnection not created')
-    await pc.setRemoteDescription(new RTCSessionDescription(sdp))
+    if (!pc.value) throw new Error('PeerConnection not created')
+    await pc.value.setRemoteDescription(new RTCSessionDescription(sdp))
   }
 
   async function createAnswer(): Promise<RTCSessionDescriptionInit> {
-    if (!pc) throw new Error('PeerConnection not created')
-    const answer = await pc.createAnswer()
-    await pc.setLocalDescription(answer)
+    if (!pc.value) throw new Error('PeerConnection not created')
+    const answer = await pc.value.createAnswer()
+    await pc.value.setLocalDescription(answer)
     return answer
   }
 
   async function addIceCandidate(candidate: RTCIceCandidateInit) {
-    if (!pc) return
+    if (!pc.value) return
     try {
-      await pc.addIceCandidate(new RTCIceCandidate(candidate))
+      await pc.value.addIceCandidate(new RTCIceCandidate(candidate))
     } catch (err) {
       console.warn('Failed to add ICE candidate:', err)
     }
@@ -214,8 +214,8 @@ export function useWebRTC() {
       const [screenTrack] = stream.getVideoTracks()
       const [videoTrack] = localStream.value?.getVideoTracks() ?? []
 
-      if (pc && videoTrack && screenTrack) {
-        const sender = pc.getSenders().find(s => s.track?.kind === 'video')
+      if (pc.value && videoTrack && screenTrack) {
+        const sender = pc.value.getSenders().find(s => s.track?.kind === 'video')
         if (sender) {
           await sender.replaceTrack(screenTrack)
         }
@@ -239,10 +239,10 @@ export function useWebRTC() {
     isScreenSharing.value = false
 
     // Restore camera video track
-    if (pc && localStream.value) {
+    if (pc.value && localStream.value) {
       const videoTrack = localStream.value.getVideoTracks()[0]
       if (videoTrack) {
-        const sender = pc.getSenders().find(s => s.track?.kind === 'video')
+        const sender = pc.value.getSenders().find(s => s.track?.kind === 'video')
         if (sender) {
           await sender.replaceTrack(videoTrack)
         }
@@ -267,8 +267,8 @@ export function useWebRTC() {
 
     localStream.value.addTrack(newVideoTrack)
 
-    if (pc) {
-      const sender = pc.getSenders().find(s => s.track?.kind === 'video')
+    if (pc.value) {
+      const sender = pc.value.getSenders().find(s => s.track?.kind === 'video')
       if (sender) {
         await sender.replaceTrack(newVideoTrack)
       }
@@ -292,8 +292,8 @@ export function useWebRTC() {
 
     localStream.value.addTrack(newAudioTrack)
 
-    if (pc) {
-      const sender = pc.getSenders().find(s => s.track?.kind === 'audio')
+    if (pc.value) {
+      const sender = pc.value.getSenders().find(s => s.track?.kind === 'audio')
       if (sender) {
         await sender.replaceTrack(newAudioTrack)
       }
@@ -309,9 +309,9 @@ export function useWebRTC() {
       screenStream.value.getTracks().forEach(t => t.stop())
       screenStream.value = null
     }
-    if (pc) {
-      pc.close()
-      pc = null
+    if (pc.value) {
+      pc.value.close()
+      pc.value = null
     }
     remoteStreams.value = new Map()
     isMuted.value = false
@@ -321,6 +321,7 @@ export function useWebRTC() {
 
   return {
     // State
+    pc,
     localStream,
     remoteStreams,
     screenStream,

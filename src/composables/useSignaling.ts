@@ -208,6 +208,10 @@ export function useSignaling() {
     connectionState.value = 'disconnected'
   }
 
+  function sendRaw(msg: Record<string, unknown>) {
+    sendMessage(msg)
+  }
+
   return {
     connectionState,
     connect,
@@ -220,6 +224,7 @@ export function useSignaling() {
     sendScreenShareStop,
     sendChatMessage,
     sendRecordingControl,
+    sendRaw,
     setCallbacks,
   }
 }
