@@ -14,15 +14,15 @@ const roomNo = Number(route.params.roomNo)
 
 const {
   roomTitle, hostName, myRole, isHost,
-  isMuted, isCamOff, isScreenSharing, isRecording, recordingStartedAt, isHandRaised,
+  isMuted, isCamOff, isSpeakerMuted, isScreenSharing, isRecording, recordingStartedAt, isHandRaised,
   networkLabel, networkDelay,
   cameraDevices, microphoneDevices, speakerDevices,
   selectedCameraDeviceId, selectedMicrophoneDeviceId, selectedSpeakerDeviceId,
   localStream, remoteStreams, screenStream, remoteAudioStream, cameraError,
   participants, selectedParticipantId, selectedParticipant,
   participantNames, screenSharerName, chatMessages, myClientId,
-  init, cleanup,
-  toggleMic, toggleCam,
+  init, cleanup, leaveRoom,
+  toggleMic, toggleCam, toggleSpeaker,
   toggleShare, toggleRecord, raiseHand,
   sendChatMessage,
   selectCameraDevice, selectMicrophoneDevice, selectSpeakerDevice,
@@ -32,6 +32,7 @@ const {
 const rightPanelMode = ref<'members' | 'chat'>('members')
 const isWebFullscreen = ref(false)
 const isWidescreen = ref(false)
+const isExitMeetingDialogVisible = ref(false)
 
 function handleOpenMembers() {
   if (isWidescreen.value) {
@@ -70,6 +71,11 @@ function handleToggleWidescreen() {
 }
 
 async function handleLeaveMeeting() {
+  if (isHost.value) {
+    isExitMeetingDialogVisible.value = true
+    return
+  }
+
   try {
     await ElMessageBox.confirm('确定要退出会议吗？', '退出会议', {
       confirmButtonText: '确定',
@@ -80,14 +86,31 @@ async function handleLeaveMeeting() {
     return
   }
 
+  leaveRoom()
+  router.push('/')
+}
+
+function handleLeaveMeetingDialogLeave() {
+  isExitMeetingDialogVisible.value = false
+  leaveRoom()
+  router.push('/')
+}
+
+async function handleLeaveMeetingDialogEnd() {
+  isExitMeetingDialogVisible.value = false
+
   try {
     await endMeetingApi(roomNo)
   } catch {
-    // Non-host or network error — still leave
+    // End request failed, still clean up local state so the host can leave.
   }
 
   cleanup()
   router.push('/')
+}
+
+function handleLeaveMeetingDialogClose() {
+  isExitMeetingDialogVisible.value = false
 }
 
 function handleSendChatMessage(text: string) {
@@ -95,7 +118,9 @@ function handleSendChatMessage(text: string) {
 }
 
 onMounted(() => {
-  init()
+  const muteOnJoin = route.query.muteOnJoin === '1' || route.query.muteOnJoin === 'true'
+  const disableCameraOnJoin = route.query.disableCameraOnJoin === '1' || route.query.disableCameraOnJoin === 'true'
+  init({ muteOnJoin, disableCameraOnJoin })
 })
 
 watch(cameraError, (msg) => {
@@ -164,9 +189,10 @@ onUnmounted(() => {
         :selected-microphone-device-id="selectedMicrophoneDeviceId"
         :selected-speaker-device-id="selectedSpeakerDeviceId"
         :remote-audio-stream="remoteAudioStream"
+        :is-speaker-muted="isSpeakerMuted"
         @toggle-mic="toggleMic"
         @toggle-cam="toggleCam"
-        @toggle-speaker="() => {}"
+        @toggle-speaker="toggleSpeaker"
         @toggle-share="toggleShare"
         @toggle-record="toggleRecord"
         @raise-hand="raiseHand"
@@ -178,5 +204,26 @@ onUnmounted(() => {
         @select-speaker-device="selectSpeakerDevice"
       />
     </template>
+
+    <el-dialog
+      v-model="isExitMeetingDialogVisible"
+      title="结束会议"
+      width="420px"
+      align-center
+      :show-close="true"
+      @close="handleLeaveMeetingDialogClose"
+    >
+      <div class="space-y-2 text-sm text-slate-600">
+        <p>请选择你的操作。</p>
+        <p>离开会议只会退出当前房间，结束会议会让所有参会者退出并结束整个会议。</p>
+      </div>
+
+      <template #footer>
+        <div class="flex items-center justify-end gap-3">
+          <el-button @click="handleLeaveMeetingDialogLeave">离开会议</el-button>
+          <el-button type="danger" @click="handleLeaveMeetingDialogEnd">结束会议</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </main>
 </template>

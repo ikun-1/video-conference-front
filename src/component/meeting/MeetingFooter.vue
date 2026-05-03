@@ -239,7 +239,7 @@ function handleSelectMicrophone(deviceId: string): void {
         <el-icon class="mr-2" :size="20">
           <PhoneFilled />
         </el-icon>
-        退出会议
+        {{ props.isHost ? '结束会议' : '退出会议' }}
       </button>
     </div>
   </footer>

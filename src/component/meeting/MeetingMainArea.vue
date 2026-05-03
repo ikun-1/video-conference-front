@@ -74,10 +74,12 @@ function applySpeakerDeviceId(deviceId: string) {
   })
 }
 
-function registerMediaOutputElement(element: HTMLMediaElement | null) {
+function registerMediaOutputElement(element: any, _refs?: Record<string, any>) {
   if (!element) return
-  if (!mediaOutputElements.value.includes(element)) {
-    mediaOutputElements.value.push(element)
+  if (!(element instanceof HTMLMediaElement)) return
+  const mediaEl = element as HTMLMediaElement
+  if (!mediaOutputElements.value.includes(mediaEl)) {
+    mediaOutputElements.value.push(mediaEl)
   }
 
   if (props.selectedSpeakerDeviceId) {

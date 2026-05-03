@@ -191,6 +191,10 @@ export function useSignaling() {
     sendMessage({ type: 'recording-control', action })
   }
 
+  function sendLeaveRoom() {
+    sendMessage({ type: 'leave-room' })
+  }
+
   function setCallbacks(cbs: SignalingCallbacks) {
     callbacks = cbs
   }
@@ -224,6 +228,7 @@ export function useSignaling() {
     sendScreenShareStop,
     sendChatMessage,
     sendRecordingControl,
+    sendLeaveRoom,
     sendRaw,
     setCallbacks,
   }

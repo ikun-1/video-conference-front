@@ -73,7 +73,10 @@ async function handleJoinMeeting(): Promise<void> {
       password: joinForm.meetingPassword || undefined,
     })
     joinDialogVisible.value = false
-    router.push(`/meeting/${roomNo}`)
+    router.push({ path: `/meeting/${roomNo}`, query: {
+      muteOnJoin: joinForm.muteOnJoin ? '1' : '0',
+      disableCameraOnJoin: joinForm.disableCameraOnJoin ? '1' : '0',
+    }})
   } catch {
     // Error handled by Axios interceptor
   } finally {

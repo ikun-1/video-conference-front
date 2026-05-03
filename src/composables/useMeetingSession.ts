@@ -36,6 +36,7 @@ export function useMeetingSession(roomNo: number) {
     selectedCameraDeviceId: '',
     selectedMicrophoneDeviceId: '',
     selectedSpeakerDeviceId: '',
+    isSpeakerMuted: false,
     chatMessages: [] as ChatMessage[],
   })
 
@@ -56,7 +57,7 @@ export function useMeetingSession(roomNo: number) {
 
   const isHost = computed(() => state.hostName === auth.user?.nickname)
 
-  async function init() {
+  async function init(opts?: { muteOnJoin?: boolean; disableCameraOnJoin?: boolean }) {
     if (!roomNo || isNaN(roomNo)) {
       console.error('Invalid roomNo:', roomNo)
       return
@@ -107,6 +108,27 @@ export function useMeetingSession(roomNo: number) {
       console.warn('Camera/mic issue:', webrtc.cameraError.value)
     }
 
+    // Apply join preferences if provided: mute microphone and/or disable camera
+    try {
+      if (opts?.muteOnJoin) {
+        const audioTrack = webrtc.localStream.value?.getAudioTracks()[0]
+        if (audioTrack) {
+          audioTrack.enabled = false
+        }
+        webrtc.isMuted.value = true
+      }
+
+      if (opts?.disableCameraOnJoin) {
+        const videoTrack = webrtc.localStream.value?.getVideoTracks()[0]
+        if (videoTrack) {
+          videoTrack.enabled = false
+        }
+        webrtc.isCamOff.value = true
+      }
+    } catch (err) {
+      console.warn('Failed to apply join preferences:', err)
+    }
+
     // Connect signaling so the user can see remote participants
     signaling.connect(roomNo, auth.token)
     watchConnectionState()
@@ -142,6 +164,13 @@ export function useMeetingSession(roomNo: number) {
     // Await offer creation so the PC state is consistent before processing next messages
     const offer = await webrtc.createOffer()
     signaling.sendOffer(offer)
+
+    // Ensure local participant reflects current local media state (mute/cam)
+    const local = state.participants.find(p => p.id === state.myClientId)
+    if (local) {
+      local.isMuted = webrtc.isMuted.value
+      local.isCamOff = webrtc.isCamOff.value
+    }
 
     // Start WebRTC quality stats collection
     rtcStats.start(7000)
@@ -232,14 +261,29 @@ export function useMeetingSession(roomNo: number) {
 
   // ---- Media Controls ----
 
+  function toggleSpeaker() {
+    state.isSpeakerMuted = !state.isSpeakerMuted
+    // Mute/unmute all audio and video elements on the page
+    const mediaElements = document.querySelectorAll('audio, video') as NodeListOf<HTMLMediaElement>
+    mediaElements.forEach((el) => {
+      el.muted = state.isSpeakerMuted
+    })
+  }
+
   async function toggleMic() {
     await webrtc.toggleMic()
     signaling.sendMuteToggle(webrtc.isMuted.value, 'audio')
+    // Update local participant state so UI reflects change immediately
+    const localP = state.participants.find(p => p.id === state.myClientId)
+    if (localP) localP.isMuted = webrtc.isMuted.value
   }
 
   async function toggleCam() {
     await webrtc.toggleCam()
     signaling.sendMuteToggle(webrtc.isCamOff.value, 'video')
+    // Update local participant state so UI reflects change immediately
+    const localP = state.participants.find(p => p.id === state.myClientId)
+    if (localP) localP.isCamOff = webrtc.isCamOff.value
   }
 
   async function toggleShare() {
@@ -271,15 +315,33 @@ export function useMeetingSession(roomNo: number) {
   async function selectCameraDevice(deviceId: string) {
     state.selectedCameraDeviceId = deviceId
     await webrtc.switchCamera(deviceId)
+    // After switching camera, ensure local participant and local webrtc state reflect camera status
+    const videoEnabled = !!webrtc.localStream.value?.getVideoTracks()[0]?.enabled
+    const localP = state.participants.find(p => p.id === state.myClientId)
+    if (localP) localP.isCamOff = !videoEnabled
+    webrtc.isCamOff.value = !videoEnabled
   }
 
   async function selectMicrophoneDevice(deviceId: string) {
     state.selectedMicrophoneDeviceId = deviceId
     await webrtc.switchMicrophone(deviceId)
+    // After switching microphone, ensure local participant and local webrtc state reflect audio status
+    const audioEnabled = !!webrtc.localStream.value?.getAudioTracks()[0]?.enabled
+    const localP = state.participants.find(p => p.id === state.myClientId)
+    if (localP) localP.isMuted = !audioEnabled
+    webrtc.isMuted.value = !audioEnabled
   }
 
   function selectSpeakerDevice(deviceId: string) {
     state.selectedSpeakerDeviceId = deviceId
+    // Auto-unmute speaker when selecting a speaker device
+    if (state.isSpeakerMuted) {
+      state.isSpeakerMuted = false
+      const mediaElements = document.querySelectorAll('audio, video') as NodeListOf<HTMLMediaElement>
+      mediaElements.forEach((el) => {
+        el.muted = false
+      })
+    }
   }
 
   function selectParticipant(participantId: string) {
@@ -290,6 +352,11 @@ export function useMeetingSession(roomNo: number) {
     rtcStats.stop()
     webrtc.cleanup()
     signaling.disconnect()
+  }
+
+  function leaveRoom() {
+    signaling.sendLeaveRoom()
+    cleanup()
   }
 
   return {
@@ -306,6 +373,7 @@ export function useMeetingSession(roomNo: number) {
 
     isMuted: computed(() => webrtc.isMuted.value),
     isCamOff: computed(() => webrtc.isCamOff.value),
+    isSpeakerMuted: computed(() => state.isSpeakerMuted),
     isScreenSharing: computed(() => webrtc.isScreenSharing.value),
     isRecording: computed(() => state.isRecording),
     recordingStartedAt: computed(() => state.recordingStartedAt),
@@ -333,6 +401,7 @@ export function useMeetingSession(roomNo: number) {
     init,
     toggleMic,
     toggleCam,
+    toggleSpeaker,
     toggleShare,
     toggleRecord,
     raiseHand,
@@ -342,5 +411,6 @@ export function useMeetingSession(roomNo: number) {
     selectSpeakerDevice,
     selectParticipant,
     cleanup,
+    leaveRoom,
   }
 }
