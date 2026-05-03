@@ -24,6 +24,7 @@ export function useWebRTCStats(
   sendMessage: (msg: Record<string, unknown>) => void,
 ) {
   const isCollecting = ref(false)
+  const latestRttMs = ref(0)
   let intervalId: ReturnType<typeof setInterval> | null = null
   // Track byte deltas for bitrate calculation, keyed by ssrc
   const previousStats = new Map<string, { bytes: number; timestamp: number }>()
@@ -193,6 +194,15 @@ export function useWebRTCStats(
         }
       }
 
+      // Update latest RTT for real-time display (best value from this collection)
+      let bestRtt = 0
+      for (const m of metrics) {
+        if (m.roundTripMs !== undefined && m.roundTripMs > bestRtt) {
+          bestRtt = m.roundTripMs
+        }
+      }
+      latestRttMs.value = Math.round(bestRtt)
+
       if (metrics.length > 0) {
         console.log('[WebRTCStats] sending', metrics.length, 'metrics:', metrics.map(m => m.label + ' j=' + (m.jitterMs?.toFixed(1) ?? '-') + ' rtt=' + (m.roundTripMs?.toFixed(1) ?? '-')).join(', '))
         sendMessage({ type: 'quality-report', metrics })
@@ -206,5 +216,5 @@ export function useWebRTCStats(
 
   onUnmounted(stop)
 
-  return { isCollecting, start, stop }
+  return { isCollecting, latestRttMs, start, stop }
 }

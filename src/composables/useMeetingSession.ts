@@ -1,4 +1,4 @@
-import { computed, reactive } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { getMeetingInfoApi } from '@/api/meeting'
 import { useWebRTC } from './useWebRTC'
@@ -20,6 +20,11 @@ export function useMeetingSession(roomNo: number) {
     computed(() => webrtc.pc.value),
     (msg) => signaling.sendRaw(msg),
   )
+
+  // Sync real-time RTT from WebRTC stats to network delay indicator
+  watch(rtcStats.latestRttMs, (rtt) => {
+    state.networkDelay = rtt
+  })
 
   const state = reactive({
     roomTitle: '',
