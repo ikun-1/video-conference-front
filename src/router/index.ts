@@ -38,6 +38,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/home/RecordingPlayView.vue'),
       },
       {
+        path: 'notifications',
+        name: 'notifications',
+        component: () => import('@/views/home/NotificationsView.vue'),
+      },
+      {
         path: 'profile',
         name: 'profile',
         component: () => import('@/views/home/ProfileView.vue'),

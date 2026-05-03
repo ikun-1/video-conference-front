@@ -23,9 +23,20 @@ export interface UploadImageResult {
   address: string
 }
 
+export interface UserListParams {
+  page?: number
+  limit?: number
+  key?: string
+}
+
+export interface UserListResult {
+  list: UserInfo[]
+  count: number
+}
+
 // 获取用户列表
-export function getUserListApi() {
-  return request.get<UserInfo[]>('/users')
+export function getUserListApi(params?: UserListParams) {
+  return request.get<UserListResult>('/users', { params })
 }
 
 // 获取用户详情

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { useMeetingSession } from '@/composables/useMeetingSession'
@@ -45,16 +45,6 @@ function handleOpenMembers() {
   }
 }
 
-const inviteLink = computed(() => `${window.location.origin}/meeting/${roomNo}`)
-
-async function handleCopyInvite() {
-  try {
-    await navigator.clipboard.writeText(inviteLink.value)
-    ElMessage.success('会议链接已复制')
-  } catch {
-    ElMessage.warning('复制失败，请手动复制')
-  }
-}
 function handleOpenChat() {
   if (isWidescreen.value) {
     isWidescreen.value = false
@@ -161,7 +151,6 @@ onUnmounted(() => {
         :host-name="hostName"
         :my-role="myRole"
         :screen-sharer-name="screenSharerName"
-        @copy-invite="handleCopyInvite"
       />
     </template>
 

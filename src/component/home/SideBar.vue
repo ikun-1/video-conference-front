@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
     CollectionTag,
@@ -14,6 +14,7 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { RouterLink, useRouter, useRoute, type RouteLocationRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationWS } from '@/composables/useNotificationWS'
 
 interface SidebarItem {
     label: string
@@ -26,6 +27,8 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
+
+const { unreadCount, connect: connectNotifWS } = useNotificationWS()
 
 const sidebarItems: SidebarItem[] = [
     { label: '会议', icon: VideoCamera, to: { name: 'home' }, activeNames: ['home'] },
@@ -68,6 +71,11 @@ function goProfile() {
     router.push({ name: 'profile' })
 }
 
+onMounted(() => {
+    if (authStore.isAuthenticated) {
+        connectNotifWS()
+    }
+})
 </script>
 
 <template>
@@ -104,12 +112,19 @@ function goProfile() {
         </div>
 
         <div class="mt-auto flex flex-col items-center gap-7 opacity-80">
-            <button
-                class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-50">
+            <RouterLink
+                :to="{ name: 'notifications' }"
+                class="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-50"
+                :class="isActive(['notifications']) ? 'bg-blue-50 text-blue-600' : ''">
                 <el-icon :size="18">
                     <Message />
                 </el-icon>
-            </button>
+                <span v-if="unreadCount > 0"
+                    class="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white">
+                    {{ unreadCount > 99 ? '99+' : unreadCount }}
+                </span>
+            </RouterLink>
+
             <button
                 class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-50"
                 :class="isProfileActive ? 'bg-blue-50 text-blue-600' : ''" @click="goProfile">
@@ -118,7 +133,7 @@ function goProfile() {
                 </el-icon>
             </button>
             <button
-                class="flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-50"
+                class="flex h-10 w-10 items-center justify-center rounded-full text-red-500 transition hover:bg-red-50"
                 @click="handleLogout">
                 <el-icon :size="18">
                     <SwitchButton />

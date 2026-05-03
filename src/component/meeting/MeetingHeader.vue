@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
-import { DocumentCopy } from '@element-plus/icons-vue'
+import { DocumentCopy, Search } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { getUserListApi } from '@/api/user'
+import { createNotificationApi } from '@/api/notification'
+import type { UserInfo } from '@/types/user'
+import { ElMessage } from 'element-plus'
 
 interface MainMeetingHeaderProps {
   isRecording: boolean
@@ -29,10 +33,6 @@ const props = withDefaults(defineProps<MainMeetingHeaderProps>(), {
 })
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
-
-const emit = defineEmits<{
-  copyInvite: []
-}>()
 
 const signalStrength = computed(() => {
   if (props.networkDelay <= 20) {
@@ -74,6 +74,65 @@ const formattedElapsed = computed(() => {
   const s = totalSec % 60
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 })
+
+// ---- Invite dialog ----
+const inviteDialogVisible = ref(false)
+const inviteLink = computed(() => `${window.location.origin}/meeting/${props.roomNo}`)
+const searchInput = ref('')
+const searchKeyword = ref('')
+const users = ref<UserInfo[]>([])
+const userLoading = ref(false)
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+watch(searchInput, (val) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    searchKeyword.value = val
+    fetchUsers()
+  }, 300)
+})
+
+async function fetchUsers() {
+  userLoading.value = true
+  try {
+    const result = await getUserListApi({ page: 1, limit: 50, key: searchKeyword.value || undefined })
+    users.value = result.list.filter(u => u.id !== user.value?.id)
+  } catch {
+    users.value = []
+  } finally {
+    userLoading.value = false
+  }
+}
+
+async function handleCopyLink() {
+  try {
+    await navigator.clipboard.writeText(inviteLink.value)
+    ElMessage.success('会议链接已复制')
+  } catch {
+    ElMessage.warning('复制失败，请手动复制')
+  }
+}
+
+async function handleInviteUser(target: UserInfo) {
+  const myName = user.value?.nickname || user.value?.username || '有人'
+  try {
+    await createNotificationApi(
+      target.id,
+      'invitation',
+      JSON.stringify({ roomNo: props.roomNo, text: `${myName} 邀请你加入会议` }),
+    )
+    ElMessage.success(`已邀请 ${target.nickname || target.username}`)
+  } catch {
+    ElMessage.warning('发送邀请失败')
+  }
+}
+
+function openDialog() {
+  searchInput.value = ''
+  searchKeyword.value = ''
+  fetchUsers()
+  inviteDialogVisible.value = true
+}
 </script>
 
 <template>
@@ -133,7 +192,7 @@ const formattedElapsed = computed(() => {
 
       <button
         class="flex items-center rounded bg-white/10 px-3 py-1.5 text-xs text-white transition-all hover:bg-white/20"
-        type="button" @click="emit('copyInvite')">
+        type="button" @click="openDialog">
         <el-icon class="mr-1">
           <DocumentCopy />
         </el-icon>
@@ -141,6 +200,46 @@ const formattedElapsed = computed(() => {
       </button>
     </div>
   </header>
+
+  <!-- Invite dialog -->
+  <el-dialog v-model="inviteDialogVisible" title="邀请成员" width="420px" top="10vh" append-to-body>
+    <div class="flex flex-col gap-4">
+      <!-- Copy link -->
+      <div class="flex items-center gap-2">
+        <el-input :model-value="inviteLink" readonly>
+          <template #append>
+            <el-button @click="handleCopyLink">复制链接</el-button>
+          </template>
+        </el-input>
+      </div>
+
+      <div class="text-sm text-slate-500">或搜索用户发送邀请</div>
+
+      <!-- User search -->
+      <el-input v-model="searchInput" placeholder="搜索用户..." :prefix-icon="Search" clearable />
+
+      <!-- User list -->
+      <div v-if="userLoading" class="py-8 text-center text-sm text-slate-400">加载中...</div>
+      <div v-else-if="users.length === 0" class="py-8 text-center text-sm text-slate-400">未找到用户</div>
+      <div v-else class="flex max-h-60 flex-col gap-1 overflow-y-auto">
+        <div
+          v-for="u in users"
+          :key="u.id"
+          class="flex items-center gap-3 rounded-lg px-3 py-2 transition hover:bg-slate-100"
+        >
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+            <img v-if="u.avatar" :src="u.avatar" alt="" class="h-full w-full object-cover" />
+            <span v-else>{{ (u.nickname || u.username)[0]?.toUpperCase() }}</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-sm font-medium text-slate-800">{{ u.nickname || u.username }}</p>
+            <p v-if="u.nickname" class="truncate text-xs text-slate-400">@{{ u.username }}</p>
+          </div>
+          <el-button size="small" type="primary" plain @click="handleInviteUser(u)">邀请</el-button>
+        </div>
+      </div>
+    </div>
+  </el-dialog>
 </template>
 
 <style scoped>
