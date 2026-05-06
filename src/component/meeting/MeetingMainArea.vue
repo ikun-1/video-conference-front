@@ -11,6 +11,7 @@ interface MeetingMainAreaProps {
   rightPanelMode?: 'members' | 'chat'
   isWebFullscreen?: boolean
   isWidescreen?: boolean
+  isControlsVisible?: boolean
   localStream?: MediaStream | null
   screenStream?: MediaStream | null
   remoteStreams?: Map<string, MediaStream> | null
@@ -24,6 +25,7 @@ const props = withDefaults(defineProps<MeetingMainAreaProps>(), {
   rightPanelMode: 'members',
   isWebFullscreen: false,
   isWidescreen: false,
+  isControlsVisible: true,
   localStream: null,
   screenStream: null,
   remoteStreams: null,
@@ -157,8 +159,6 @@ function toggleFullscreen() {
   if (document.fullscreenElement) {
     document.exitFullscreen()
   } else {
-    if (props.isWidescreen) emit('toggleWidescreen')
-    if (props.isWebFullscreen) emit('toggleWebFullscreen')
     videoContainerRef.value?.requestFullscreen()
   }
 }
@@ -178,7 +178,7 @@ onMounted(() => {
 <template>
   <div class="relative flex min-h-0 flex-1 overflow-hidden bg-[#0a0a0a]" :class="{ 'select-none': isResizing }">
     <!-- Left: main video display area -->
-    <div ref="videoContainerRef" class="group relative flex flex-1 items-center justify-center overflow-hidden bg-[#0a0a0a] video-container">
+    <div ref="videoContainerRef" class="group relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-[#0a0a0a] video-container">
       <template v-if="selectedParticipant">
         <video
           v-if="getStreamForParticipant(selectedParticipant.id) || (selectedParticipant.id === myClientId && localStream)"
@@ -206,28 +206,34 @@ onMounted(() => {
 
       <!-- Controls: bottom-right -->
       <div
-        class="absolute bottom-3 right-3 z-10 flex items-center gap-1 rounded-lg bg-black/60 p-1 opacity-0 transition-opacity group-hover:opacity-100"
+        class="absolute bottom-16 sm:bottom-3 right-3 z-10 flex items-center gap-1 rounded-lg bg-black/60 p-1 transition-opacity duration-300 pointer-events-auto"
+        :class="[
+          'sm:opacity-0 sm:group-hover:opacity-100',
+          isControlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        ]"
       >
-        <el-tooltip content="宽屏模式" placement="top">
-          <button
-            class="rounded-md p-1.5 text-white/80 transition-colors hover:bg-white/15 hover:text-white"
-            :class="{ 'bg-blue-600/30 text-blue-400': isWidescreen }"
-            type="button"
-            @click="toggleWidescreen"
-          >
-            <i class="iconfont" :class="isWidescreen ? 'icon-wangyekuanpingshou' : 'icon-wangyekuanping'" />
-          </button>
-        </el-tooltip>
-        <el-tooltip content="网页全屏" placement="top">
-          <button
-            class="rounded-md p-1.5 text-white/80 transition-colors hover:bg-white/15 hover:text-white"
-            :class="{ 'bg-blue-600/30 text-blue-400': isWebFullscreen }"
-            type="button"
-            @click="handleToggleWebFullscreen"
-          >
-            <i class="iconfont" :class="isWebFullscreen ? 'icon-wangyequanpingshouqilai' : 'icon-wangyequanping'" />
-          </button>
-        </el-tooltip>
+        <div class="hidden sm:flex gap-1">
+          <el-tooltip content="宽屏模式" placement="top">
+            <button
+              class="rounded-md p-1.5 text-white/80 transition-colors hover:bg-white/15 hover:text-white"
+              :class="{ 'bg-blue-600/30 text-blue-400': isWidescreen }"
+              type="button"
+              @click="toggleWidescreen"
+            >
+              <i class="iconfont" :class="isWidescreen ? 'icon-wangyekuanpingshou' : 'icon-wangyekuanping'" />
+            </button>
+          </el-tooltip>
+          <el-tooltip content="网页全屏" placement="top">
+            <button
+              class="rounded-md p-1.5 text-white/80 transition-colors hover:bg-white/15 hover:text-white"
+              :class="{ 'bg-blue-600/30 text-blue-400': isWebFullscreen }"
+              type="button"
+              @click="handleToggleWebFullscreen"
+            >
+              <i class="iconfont" :class="isWebFullscreen ? 'icon-wangyequanpingshouqilai' : 'icon-wangyequanping'" />
+            </button>
+          </el-tooltip>
+        </div>
         <el-tooltip content="全屏" placement="top">
           <button
             class="rounded-md p-1.5 text-white/80 transition-colors hover:bg-white/15 hover:text-white"
@@ -244,19 +250,23 @@ onMounted(() => {
     <!-- Draggable divider -->
     <div
       v-show="!(isWidescreen || isWebFullscreen)"
-      class="relative w-1.5 cursor-col-resize flex-shrink-0 bg-white/5 transition-colors hover:bg-blue-500 active:bg-blue-600"
+      class="hidden sm:block relative w-1.5 cursor-col-resize flex-shrink-0 bg-white/5 transition-colors hover:bg-blue-500 active:bg-blue-600 z-10"
       @mousedown="startResize"
     />
 
     <!-- Right panel -->
     <div
       v-show="!(isWidescreen || isWebFullscreen)"
-      class="flex flex-col overflow-hidden bg-[#1a1a1a]" :style="{ width: rightPanelWidth + 'px' }"
+      class="right-panel-responsive flex flex-col overflow-hidden bg-[#1a1a1a] absolute right-0 top-0 bottom-0 z-50 sm:relative sm:z-0 shadow-[-4px_0_15px_rgba(0,0,0,0.5)] sm:shadow-none"
+      :style="{ width: rightPanelWidth + 'px' }"
     >
       <!-- Members panel -->
       <template v-if="rightPanelMode === 'members'">
-        <div class="flex-shrink-0 border-b border-white/10 px-4 py-3 text-sm font-medium text-slate-300">
-          参会成员（{{ participants.length }}）
+        <div class="flex-shrink-0 border-b border-white/10 px-4 py-3 text-sm font-medium text-slate-300 flex justify-between items-center">
+          <span>参会成员（{{ participants.length }}）</span>
+          <button class="sm:hidden p-1 text-slate-400 hover:text-white" @click="toggleWidescreen">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
         </div>
 
         <div class="flex-1 space-y-3 overflow-y-auto p-3">
@@ -321,8 +331,11 @@ onMounted(() => {
 
       <!-- Chat panel -->
       <template v-if="rightPanelMode === 'chat'">
-        <div class="flex-shrink-0 border-b border-white/10 px-4 py-3 text-sm font-medium text-slate-300">
-          聊天
+        <div class="flex-shrink-0 border-b border-white/10 px-4 py-3 text-sm font-medium text-slate-300 flex justify-between items-center">
+          <span>聊天</span>
+          <button class="sm:hidden p-1 text-slate-400 hover:text-white" @click="toggleWidescreen">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
         </div>
 
         <div ref="chatContainerRef" class="flex-1 space-y-3 overflow-y-auto p-4 text-sm">
@@ -364,5 +377,11 @@ onMounted(() => {
 .video-container:fullscreen {
   width: 100vw;
   height: 100vh;
+}
+
+@media (max-width: 639px) {
+  .right-panel-responsive {
+    width: 100% !important;
+  }
 }
 </style>
