@@ -105,18 +105,18 @@ onMounted(fetchRecordings)
 </script>
 
 <template>
-  <div class="px-16 py-8">
-    <div class="mb-6 flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-slate-800">录制管理</h1>
+  <div class="h-full px-4 sm:px-16 py-4 sm:py-8 overflow-y-auto">
+    <div class="mb-4 sm:mb-6 flex items-center justify-between">
+      <h1 class="text-xl sm:text-2xl font-bold text-slate-800">录制管理</h1>
     </div>
 
-    <div v-if="loading" class="py-20 text-center text-sm text-slate-400">加载中...</div>
+    <div v-if="loading" class="py-10 sm:py-20 text-center text-sm text-slate-400">加载中...</div>
 
-    <div v-else-if="!recordings.length" class="py-20 text-center text-sm text-slate-400">
+    <div v-else-if="!recordings.length" class="py-10 sm:py-20 text-center text-sm text-slate-400">
       暂无录制记录
     </div>
 
-    <div v-else class="space-y-3">
+    <div v-else class="space-y-3 pb-8">
       <div
         v-for="rec in recordings"
         :key="rec.id"
@@ -124,63 +124,66 @@ onMounted(fetchRecordings)
       >
         <!-- Summary row -->
         <div
-          class="flex cursor-pointer items-center px-6 py-4 transition hover:bg-slate-50"
+          class="flex flex-col sm:flex-row cursor-pointer sm:items-center px-4 sm:px-6 py-3 sm:py-4 transition hover:bg-slate-50 gap-3 sm:gap-0"
           @click="toggleExpand(rec.id)"
         >
           <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-3">
-              <el-icon :size="20" class="text-slate-400">
+            <div class="flex items-center gap-2 sm:gap-3">
+              <el-icon :size="20" class="text-slate-400 hidden sm:inline-block">
                 <VideoCamera />
               </el-icon>
-              <span class="text-base font-medium text-slate-900">{{ rec.title }}</span>
+              <span class="text-sm sm:text-base font-medium text-slate-900 truncate">{{ rec.title }}</span>
               <span
-                class="rounded px-1.5 py-0.5 text-[10px] font-medium leading-none"
+                class="rounded px-1.5 py-0.5 text-[10px] font-medium leading-none whitespace-nowrap"
                 :class="statusBadgeClass(rec.status)"
               >{{ formatStatus(rec.status) }}</span>
             </div>
-            <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+            <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] sm:text-xs text-slate-500">
               <span>会议号: {{ rec.roomNo }}</span>
               <span>时长: {{ formatDuration(rec.durationMs) }}</span>
               <span>文件数: {{ rec.fileCount }}</span>
-              <span>{{ rec.startedAt }}</span>
+              <span class="w-full sm:w-auto mt-0.5 sm:mt-0 text-slate-400">{{ rec.startedAt }}</span>
             </div>
           </div>
-          <div class="ml-4 flex items-center gap-2">
+          <div class="flex items-center justify-end sm:justify-start gap-2 border-t border-slate-50 sm:border-0 pt-2 sm:pt-0 mt-1 sm:mt-0">
             <el-button size="small" @click.stop="goPlay(rec.id)">
               <el-icon><CaretRight /></el-icon>
-              播放
+              <span class="hidden sm:inline">播放</span>
             </el-button>
             <el-button size="small" type="danger" plain @click.stop="handleDelete(rec.id)">
               <el-icon><Delete /></el-icon>
-              删除
+              <span class="hidden sm:inline">删除</span>
             </el-button>
-            <el-icon class="text-slate-400 transition" :class="{ 'rotate-180': expanding[rec.id] }">
-              <ArrowDown />
-            </el-icon>
+            <div class="flex items-center justify-center p-1 cursor-pointer rounded hover:bg-slate-100">
+                <el-icon class="text-slate-400 transition" :class="{ 'rotate-180': expanding[rec.id] }">
+                <ArrowDown />
+                </el-icon>
+            </div>
           </div>
         </div>
 
         <!-- File list -->
-        <div v-if="expanding[rec.id] && details[rec.id]" class="border-t border-slate-100 bg-slate-50 px-6 py-3">
+        <div v-if="expanding[rec.id] && details[rec.id]" class="border-t border-slate-100 bg-slate-50 px-4 sm:px-6 py-3">
           <div class="mb-2 text-xs font-medium text-slate-500">录制文件</div>
           <div class="space-y-2">
             <div
               v-for="file in details[rec.id]!.files"
               :key="file.id"
-              class="flex items-center justify-between rounded bg-white px-4 py-2 text-sm"
+              class="flex flex-col sm:flex-row sm:items-center justify-between rounded bg-white px-3 sm:px-4 py-2 text-sm gap-2 sm:gap-0"
             >
-              <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2 sm:gap-3 overflow-hidden">
                 <span
-                  class="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-600"
+                  class="shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-600"
                 >{{ file.kind === 'video' ? '视频' : '音频' }}</span>
-                <span class="text-slate-700">{{ file.displayName }}</span>
+                <span class="text-slate-700 truncate text-xs sm:text-sm">{{ file.displayName }}</span>
               </div>
               <el-button
                 size="small"
+                class="self-end sm:self-auto"
                 @click="handleDownloadFile(rec.id, file.id, file.downloadUrl)"
               >
                 <el-icon><Download /></el-icon>
-                下载
+                <span class="hidden sm:inline">下载</span>
               </el-button>
             </div>
           </div>

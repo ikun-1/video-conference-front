@@ -92,10 +92,10 @@ onUnmounted(() => {
 <template>
   <div
     ref="containerRef"
-    class="mt-16 flex h-full w-full flex-col gap-4 md:mt-24 md:flex-row md:gap-0"
+    class="mt-4 sm:mt-16 flex h-full w-full flex-col gap-4 md:mt-24 md:flex-row md:gap-0 px-2 sm:px-0"
     :class="{ 'select-none': isResizing }"
   >
-    <div class="min-w-0 shrink-0 md:pr-3" :style="leftPanelStyle">
+    <div class="min-w-0 shrink-0 md:pr-3 w-full" :style="leftPanelStyle">
       <MeetingAction @openJoin="$emit('openJoin')" />
     </div>
 

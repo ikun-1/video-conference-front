@@ -151,17 +151,17 @@ onMounted(loadProfile)
 </script>
 
 <template>
-  <div class="h-full w-full overflow-y-auto bg-slate-50 px-10 py-8">
-    <div class="mx-auto max-w-4xl rounded-2xl border border-slate-100 bg-white p-8 shadow-sm">
-      <div class="mb-8 flex items-center justify-between">
+  <div class="h-full w-full overflow-y-auto bg-slate-50 px-4 sm:px-10 py-4 sm:py-8">
+    <div class="mx-auto max-w-4xl rounded-2xl border border-slate-100 bg-white p-4 sm:p-8 shadow-sm">
+      <div class="mb-6 sm:mb-8 flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-semibold text-slate-800">个人信息</h1>
-          <p class="mt-1 text-sm text-slate-500">在这里更新你的头像和账户资料</p>
+          <h1 class="text-xl sm:text-2xl font-semibold text-slate-800">个人信息</h1>
+          <p class="mt-1 text-xs sm:text-sm text-slate-500">在这里更新你的头像和账户资料</p>
         </div>
       </div>
 
-      <div v-loading="loading" class="grid grid-cols-1 gap-8 lg:grid-cols-[280px,1fr]">
-        <section class="rounded-xl border border-slate-100 bg-slate-50 p-6">
+      <div v-loading="loading" class="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[280px,1fr]">
+        <section class="rounded-xl border border-slate-100 bg-slate-50 p-4 sm:p-6">
           <div class="flex flex-col items-center">
             <div
               class="group relative flex h-32 w-32 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white"
@@ -192,8 +192,8 @@ onMounted(loadProfile)
           </div>
         </section>
 
-        <section class="rounded-xl border border-slate-100 p-6">
-          <el-form label-width="96px" class="max-w-xl">
+        <section class="rounded-xl border border-slate-100 p-4 sm:p-6">
+          <el-form label-width="72px" class="max-w-xl sm:label-width-[96px]">
             <el-form-item label="用户名">
               <el-input :model-value="username" disabled />
             </el-form-item>

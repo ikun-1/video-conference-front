@@ -105,17 +105,17 @@ async function handleCreateMeeting(): Promise<void> {
 
 <template>
   <div class="flex-1">
-    <div class="grid grid-cols-2 gap-y-12">
+    <div class="grid grid-cols-4 sm:grid-cols-2 gap-y-6 sm:gap-y-12">
       <div v-for="item in quickActions" :key="item.title" class="flex flex-col items-center">
         <button
-          class="group flex cursor-pointer flex-col items-center rounded-2xl px-4 py-2 text-center transition-transform duration-200 hover:scale-105 active:scale-95"
+          class="group flex cursor-pointer flex-col items-center rounded-2xl px-1 sm:px-4 py-1 sm:py-2 text-center transition-transform duration-200 hover:scale-105 active:scale-95 w-full sm:w-auto"
           type="button"
           @click="handleActionClick(item.title)"
         >
           <div
-            class="flex h-28 w-28 items-center justify-center rounded-[26px] bg-blue-600 text-4xl text-white shadow-sm transition-transform duration-200 group-hover:scale-110"
+            class="flex h-14 w-14 sm:h-28 sm:w-28 items-center justify-center rounded-2xl sm:rounded-[26px] bg-blue-600 text-2xl sm:text-4xl text-white shadow-sm transition-transform duration-200 sm:group-hover:scale-110"
           >
-            <el-icon :size="42">
+            <el-icon :size="24" class="sm:!text-[42px]">
               <Plus v-if="item.icon === 'plus'" />
               <Lightning v-else-if="item.icon === 'lightning'" />
               <Calendar v-else-if="item.icon === 'calendar'" />
@@ -123,10 +123,10 @@ async function handleCreateMeeting(): Promise<void> {
             </el-icon>
           </div>
           <div
-            class="mt-4 flex items-center gap-1 text-base font-medium text-slate-900 transition-colors group-hover:text-blue-600"
+            class="mt-2 sm:mt-4 flex items-center justify-center gap-1 text-[11px] sm:text-base font-medium text-slate-900 transition-colors group-hover:text-blue-600"
           >
-            <span>{{ item.title }}</span>
-            <el-icon v-if="item.hasArrow" :size="14" class="transition-transform duration-200 group-hover:scale-110">
+            <span class="whitespace-nowrap truncate">{{ item.title }}</span>
+            <el-icon v-if="item.hasArrow" :size="10" class="hidden sm:inline-flex transition-transform duration-200 group-hover:scale-110">
               <ArrowDown />
             </el-icon>
           </div>
