@@ -106,12 +106,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="flex h-full flex-col px-16 py-8">
+  <div class="flex h-full flex-col px-4 sm:px-16 py-4 sm:py-8 pb-0  md:pb-8">
     <!-- Header -->
-    <div class="mb-6 flex items-center justify-between">
-      <div class="flex items-center gap-3">
+    <div class="mb-4 sm:mb-6 flex items-center justify-between">
+      <div class="flex items-center gap-2 sm:gap-3">
         <el-icon :size="24" class="text-blue-600"><Bell /></el-icon>
-        <h1 class="text-xl font-bold text-slate-800">消息</h1>
+        <h1 class="text-xl sm:text-2xl font-bold text-slate-800">消息</h1>
       </div>
       <el-button v-if="notifications.some(n => n.status === 'unread')" size="small" @click="handleMarkAllRead">
         全部已读
@@ -133,50 +133,53 @@ onMounted(() => {
 
     <!-- List -->
     <div v-else class="flex-1 overflow-y-auto">
-      <div class="space-y-1">
+      <div class="space-y-2 sm:space-y-1 pb-4">
         <div
           v-for="n in notifications"
           :key="n.id"
-          class="flex cursor-pointer items-start gap-4 rounded-lg border border-slate-100 px-4 py-3.5 transition hover:bg-slate-50"
+          class="flex cursor-pointer items-start gap-3 sm:gap-4 rounded-lg border border-slate-100 px-3 sm:px-4 py-3 sm:py-3.5 transition hover:bg-slate-50 flex-wrap sm:flex-nowrap relative"
           :class="n.status === 'unread' ? 'bg-blue-50/40' : 'bg-white'"
           @click="handleClick(n)"
         >
           <!-- Icon -->
           <div
-            class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+            class="mt-0.5 flex h-8 w-8 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full"
             :class="n.type === 'invitation' ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-500'"
           >
-            <el-icon :size="20" v-if="n.type === 'invitation'">
+            <el-icon :size="16" class="sm:!text-[20px]" v-if="n.type === 'invitation'">
               <UserFilled />
             </el-icon>
-            <el-icon :size="20" v-else>
+            <el-icon :size="16" class="sm:!text-[20px]" v-else>
               <Message />
             </el-icon>
           </div>
 
           <!-- Content -->
-          <div class="min-w-0 flex-1">
-            <p class="text-sm" :class="n.status === 'unread' ? 'font-medium text-slate-800' : 'text-slate-600'">
+          <div class="min-w-0 flex-1 pr-4 sm:pr-0">
+            <p class="text-[13px] sm:text-sm leading-snug" :class="n.status === 'unread' ? 'font-medium text-slate-800' : 'text-slate-600'">
               {{ invitationInfo(n).text }}
-              <el-icon v-if="invitationInfo(n).roomNo" :size="14" class="ml-1 inline text-blue-500">
+              <el-icon v-if="invitationInfo(n).roomNo" :size="14" class="ml-1 inline text-blue-500 align-text-bottom">
                 <VideoCamera />
               </el-icon>
             </p>
-            <p class="mt-1 text-xs text-slate-400">{{ formatTime(n.createdAt) }}</p>
+            <p class="mt-1 text-[11px] sm:text-xs text-slate-400">{{ formatTime(n.createdAt) }}</p>
           </div>
 
-          <!-- Join button for invitations -->
-          <el-button v-if="n.type === 'invitation' && invitationInfo(n).roomNo" size="small" type="primary" plain @click.stop="router.push({ name: 'meeting', params: { roomNo: invitationInfo(n).roomNo } })">
-            加入
-          </el-button>
+          <!-- Unread dot (mobile absolute, desktop relative) -->
+          <span v-if="n.status === 'unread'" class="absolute right-3 top-4 sm:static sm:mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
 
-          <!-- Unread dot -->
-          <span v-if="n.status === 'unread'" class="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+          <!-- Actions -->
+          <div class="flex items-center gap-2 w-full sm:w-auto justify-end mt-1 sm:mt-0 border-t border-slate-50 sm:border-0 pt-2 sm:pt-0">
+            <!-- Join button for invitations -->
+            <el-button v-if="n.type === 'invitation' && invitationInfo(n).roomNo" size="small" type="primary" plain @click.stop="router.push({ name: 'meeting', params: { roomNo: invitationInfo(n).roomNo } })">
+              加入
+            </el-button>
 
-          <!-- Delete -->
-          <el-button size="small" type="danger" plain @click.stop="handleDelete(n)">
-            删除
-          </el-button>
+            <!-- Delete -->
+            <el-button size="small" type="danger" plain @click.stop="handleDelete(n)">
+              删除
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
