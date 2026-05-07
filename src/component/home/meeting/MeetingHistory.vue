@@ -38,14 +38,14 @@ function joinMeeting(roomNo: number) {
 </script>
 
 <template>
-  <div class="px-16">
-    <div class="text-5xl font-semibold tracking-tight text-slate-800">{{ meetings.length ? formatDate(meetings[0]?.createdAt ?? '') : '暂无会议' }}</div>
-    <div class="mt-3 text-sm text-slate-700">{{ new Date().toLocaleDateString('zh-CN', { weekday: 'long' }) }}</div>
+  <div class="px-4 sm:px-16">
+    <div class="text-3xl sm:text-5xl font-semibold tracking-tight text-slate-800">{{ meetings.length ? formatDate(meetings[0]?.createdAt ?? '') : '暂无会议' }}</div>
+    <div class="mt-2 sm:mt-3 text-xs sm:text-sm text-slate-700">{{ new Date().toLocaleDateString('zh-CN', { weekday: 'long' }) }}</div>
 
-    <div class="mt-6 flex items-center">
+    <div class="mt-4 sm:mt-6 flex items-center">
       <div class="h-px flex-1 bg-slate-100" />
       <button
-        class="ml-6 rounded-full border border-slate-100 bg-white px-3 py-1.5 text-xs text-slate-500 transition hover:bg-slate-50">
+        class="ml-4 sm:ml-6 rounded-full border border-slate-100 bg-white px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs text-slate-500 transition hover:bg-slate-50">
         全部会议
         <el-icon class="ml-1 align-middle">
           <ArrowRight />
@@ -53,15 +53,15 @@ function joinMeeting(roomNo: number) {
       </button>
     </div>
 
-    <div v-if="loading" class="mt-8 text-center text-sm text-slate-400">加载中...</div>
+    <div v-if="loading" class="mt-6 sm:mt-8 text-center text-sm text-slate-400">加载中...</div>
 
-    <div v-else class="mt-8 space-y-8">
+    <div v-else class="mt-6 sm:mt-8 space-y-6 sm:space-y-8">
       <div v-for="meeting in meetings" :key="meeting.id">
         <div class="text-xs text-slate-400">{{ formatDate(meeting.createdAt) }}</div>
-        <div class="mt-4 flex items-start justify-between">
+        <div class="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-0">
           <div class="min-w-0">
-            <div class="text-base font-semibold text-slate-900">{{ meeting.title }}</div>
-            <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+            <div class="text-sm sm:text-base font-semibold text-slate-900">{{ meeting.title }}</div>
+            <div class="mt-1.5 sm:mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] sm:text-xs text-slate-500">
               <span>{{ formatTime(meeting.createdAt) }}</span>
               <span class="text-slate-300">·</span>
               <span>{{ meeting.roomNo }}</span>
@@ -74,7 +74,7 @@ function joinMeeting(roomNo: number) {
           <el-button
             v-if="meeting.status !== 'ended'"
             type="primary"
-            class="ml-8 mt-1.5"
+            class="sm:ml-8 sm:mt-1.5 w-full sm:w-auto"
             @click="joinMeeting(meeting.roomNo)"
           >
             入会
@@ -82,7 +82,7 @@ function joinMeeting(roomNo: number) {
         </div>
       </div>
 
-      <div v-if="!meetings.length && !loading" class="pt-8 text-center text-sm text-slate-400">
+      <div v-if="!meetings.length && !loading" class="pt-6 sm:pt-8 text-center text-sm text-slate-400">
         暂无会议记录，点击上方"创建会议"开始
       </div>
     </div>

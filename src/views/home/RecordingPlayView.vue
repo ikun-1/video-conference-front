@@ -88,23 +88,24 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl px-8 py-6">
-    <!-- Header -->
-    <div class="mb-6 flex items-center gap-4">
-      <el-button text @click="router.back()">
-        <el-icon><ArrowLeft /></el-icon>
-        返回
-      </el-button>
-      <div>
-        <h1 class="text-xl font-bold text-slate-800">{{ title || '录制回放' }}</h1>
+  <div class="h-full overflow-y-auto px-4 sm:px-8 py-4 sm:py-6 pb-20 md:pb-6">
+    <div class="mx-auto max-w-4xl">
+      <!-- Header -->
+      <div class="mb-6 flex items-center gap-4">
+        <el-button text @click="router.back()">
+          <el-icon><ArrowLeft /></el-icon>
+          返回
+        </el-button>
+        <div>
+          <h1 class="text-xl font-bold text-slate-800">{{ title || '录制回放' }}</h1>
+        </div>
       </div>
-    </div>
 
-    <div v-if="loading" class="py-20 text-center text-sm text-slate-400">加载中...</div>
-    <div v-else-if="!files.length" class="py-20 text-center text-sm text-slate-400">暂无录制文件</div>
+      <div v-if="loading" class="py-20 text-center text-sm text-slate-400">加载中...</div>
+      <div v-else-if="!files.length" class="py-20 text-center text-sm text-slate-400">暂无录制文件</div>
 
-    <div v-else class="space-y-8">
-      <!-- WebM (video+audio) -->
+      <div v-else class="space-y-8 pb-8">
+        <!-- WebM (video+audio) -->
       <div v-if="webmFiles.length">
         <h2 class="mb-3 text-xs font-medium uppercase tracking-wide text-slate-500">录制视频</h2>
         <div class="space-y-3">
@@ -181,6 +182,7 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </template>
