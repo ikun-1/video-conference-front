@@ -1,6 +1,7 @@
 import { computed, reactive, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { getMeetingInfoApi } from '@/api/meeting'
+import { getIceServersApi } from '@/api/config'
 import { useWebRTC } from './useWebRTC'
 import { useSignaling, type ConnectionState } from './useSignaling'
 import { useWebRTCStats } from './useWebRTCStats'
@@ -91,10 +92,24 @@ export function useMeetingSession(roomNo: number) {
       onError: handleError,
     })
 
-    webrtc.createPeerConnection([
+    // Fetch ICE server config (STUN + TURN) from backend
+    let iceServers: RTCIceServer[] = [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
-    ])
+    ]
+    try {
+      const config = await getIceServersApi()
+      if (config.iceServers?.length) {
+        iceServers = config.iceServers.map(s => ({
+          urls: s.urls,
+          username: s.username,
+          credential: s.credential,
+        }))
+      }
+    } catch (e) {
+      console.warn('Failed to fetch ICE servers from backend, using STUN-only fallback:', e)
+    }
+    webrtc.createPeerConnection(iceServers)
 
     webrtc.setOnIceCandidate((candidate) => {
       signaling.sendIceCandidate(candidate)
