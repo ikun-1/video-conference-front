@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref, nextTick } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { getOverviewStatsApi, getUserStatsApi, getTrendStatsApi, getMeetingQualityReportApi } from '@/api/stats'
 import type { OverviewStats, UserStats, TrendStats, MeetingQualityReport } from '@/types/stats'
 import { storeToRefs } from 'pinia'
 import { DataAnalysis } from '@element-plus/icons-vue'
+import * as echarts from 'echarts'
 
 const authStore = useAuthStore()
 const { user } = storeToRefs(authStore)
@@ -13,6 +14,12 @@ const loading = ref(true)
 const overview = ref<OverviewStats | null>(null)
 const myStats = ref<UserStats | null>(null)
 const trend = ref<TrendStats | null>(null)
+const trendChart = ref<HTMLElement | null>(null)
+const roleChart = ref<HTMLElement | null>(null)
+const durationChart = ref<HTMLElement | null>(null)
+let chartInstance: echarts.ECharts | null = null
+let roleChartInstance: echarts.ECharts | null = null
+let durationChartInstance: echarts.ECharts | null = null
 
 function formatDuration(ms: number): string {
   if (!ms) return '00:00'
@@ -49,16 +56,224 @@ async function fetchData() {
     // handled by interceptor
   } finally {
     loading.value = false
+    nextTick(() => {
+      initTrendChart()
+      if (myStats.value) {
+        initRoleChart()
+        initDurationChart()
+      }
+    })
   }
+}
+
+function initRoleChart() {
+  if (!roleChart.value || !myStats.value) return
+  if (!roleChartInstance) {
+    roleChartInstance = echarts.init(roleChart.value)
+  }
+
+  const hosted = myStats.value.meetingsHosted
+  const participated = myStats.value.totalMeetings - hosted
+
+  const option = {
+    tooltip: { trigger: 'item' },
+    legend: { bottom: '0%' },
+    color: ['#f59e0b', '#3b82f6'],
+    series: [
+      {
+        name: '参会角色',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: { show: false, position: 'center' },
+        emphasis: {
+          label: { show: true, fontSize: 16, fontWeight: 'bold' }
+        },
+        labelLine: { show: false },
+        data: [
+          { value: hosted, name: '作为主持人' },
+          { value: participated, name: '作为参会者' }
+        ]
+      }
+    ]
+  }
+  roleChartInstance.setOption(option)
+}
+
+function initDurationChart() {
+  if (!durationChart.value || !myStats.value || myStats.value.recentMeetings.length === 0) return
+  if (!durationChartInstance) {
+    durationChartInstance = echarts.init(durationChart.value)
+  }
+
+  const recentMeetings = [...myStats.value.recentMeetings].reverse()
+  const titles = recentMeetings.map(m => m.title || `会议#${m.roomNo}`).map(t => t.length > 8 ? t.substring(0, 8) + '...' : t)
+  const durations = recentMeetings.map(m => Math.round(m.durationMs / 60000)) // minutes
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: '{b} <br/> 时长: {c} 分钟'
+    },
+    grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+    xAxis: {
+      type: 'category',
+      data: titles,
+      axisLabel: { color: '#64748b', interval: 0, rotate: 30 }
+    },
+    yAxis: {
+      type: 'value',
+      name: '时长 (分钟)',
+      nameTextStyle: { color: '#64748b' },
+      axisLabel: { color: '#64748b' },
+      splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } }
+    },
+    series: [
+      {
+        name: '时长',
+        type: 'bar',
+        barWidth: '40%',
+        data: durations,
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: '#14b8a6' },
+            { offset: 1, color: '#0f766e' }
+          ]),
+          borderRadius: [4, 4, 0, 0]
+        }
+      }
+    ]
+  }
+  durationChartInstance.setOption(option)
+}
+
+function initTrendChart() {
+  if (!trendChart.value || !trend.value) return
+  if (!chartInstance) {
+    chartInstance = echarts.init(trendChart.value)
+  }
+
+  const dates = trend.value.days.map(d => d.date)
+  const meetings = trend.value.days.map(d => d.meetings)
+  const participants = trend.value.days.map(d => d.participants)
+
+  const option = {
+    tooltip: {
+      trigger: 'axis'
+    },
+    legend: {
+      data: ['新增会议数', '活跃参会人数'],
+      bottom: '0%'
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '10%',
+      top: '5%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: dates,
+      axisLabel: {
+        color: '#64748b'
+      },
+      axisLine: {
+        lineStyle: { color: '#e2e8f0' }
+      }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: {
+        color: '#64748b'
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#f1f5f9',
+          type: 'dashed'
+        }
+      }
+    },
+    series: [
+      {
+        name: '新增会议数',
+        type: 'line',
+        smooth: true,
+        data: meetings,
+        itemStyle: { color: '#2563eb' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(37,99,235,0.3)' },
+            { offset: 1, color: 'rgba(37,99,235,0.05)' }
+          ])
+        }
+      },
+      {
+        name: '活跃参会人数',
+        type: 'line',
+        smooth: true,
+        data: participants,
+        itemStyle: { color: '#9333ea' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(147,51,234,0.3)' },
+            { offset: 1, color: 'rgba(147,51,234,0.05)' }
+          ])
+        }
+      }
+    ]
+  }
+
+  chartInstance.setOption(option)
 }
 
 // ---- Quality Report ----
 const qualityReport = ref<MeetingQualityReport | null>(null)
 const qualityLoading = ref(false)
 const selectedQualityMeetingId = ref<number | null>(null)
+const connectionTypeChart = ref<HTMLElement | null>(null)
+let connectionTypeChartInstance: echarts.ECharts | null = null
 let isUnmounted = false
 
-onUnmounted(() => { isUnmounted = true })
+const handleResize = () => {
+  if (chartInstance) chartInstance.resize()
+  if (roleChartInstance) roleChartInstance.resize()
+  if (durationChartInstance) durationChartInstance.resize()
+  if (connectionTypeChartInstance) connectionTypeChartInstance.resize()
+}
+
+onMounted(() => {
+  fetchData()
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  isUnmounted = true
+  window.removeEventListener('resize', handleResize)
+  if (chartInstance) {
+    chartInstance.dispose()
+    chartInstance = null
+  }
+  if (roleChartInstance) {
+    roleChartInstance.dispose()
+    roleChartInstance = null
+  }
+  if (durationChartInstance) {
+    durationChartInstance.dispose()
+    durationChartInstance = null
+  }
+  if (connectionTypeChartInstance) {
+    connectionTypeChartInstance.dispose()
+    connectionTypeChartInstance = null
+  }
+})
 
 async function loadQualityReport(meetingId: number) {
   selectedQualityMeetingId.value = meetingId
@@ -66,12 +281,51 @@ async function loadQualityReport(meetingId: number) {
   qualityReport.value = null
   try {
     const result = await getMeetingQualityReportApi(meetingId)
-    if (!isUnmounted) qualityReport.value = result
+    if (!isUnmounted) {
+      qualityReport.value = result
+      nextTick(() => {
+        initConnectionTypeChart()
+      })
+    }
   } catch {
     if (!isUnmounted) qualityReport.value = null
   } finally {
     if (!isUnmounted) qualityLoading.value = false
   }
+}
+
+function initConnectionTypeChart() {
+  if (!connectionTypeChart.value || !qualityReport.value || !qualityReport.value.candidateDist || qualityReport.value.candidateDist.length === 0) return
+  if (!connectionTypeChartInstance) {
+    connectionTypeChartInstance = echarts.init(connectionTypeChart.value)
+  }
+
+  const data = qualityReport.value.candidateDist.map(c => ({
+    name: candidateTypeLabel(c.type),
+    value: c.count
+  }))
+
+  const option = {
+    tooltip: { trigger: 'item', formatter: '{b} : {c}次 ({d}%)' },
+    legend: { top: '5%', left: 'center' },
+    color: ['#10b981', '#6366f1', '#8b5cf6', '#8b5cf6'],
+    series: [
+      {
+        name: '连接类型',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['50%', '60%'],
+        avoidLabelOverlap: true,
+        itemStyle: {
+          borderRadius: 4,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        data: data
+      }
+    ]
+  }
+  connectionTypeChartInstance.setOption(option)
 }
 
 function formatPercent(val: number): string {
@@ -99,7 +353,6 @@ function candidateTypeLabel(type: string): string {
   }
 }
 
-onMounted(fetchData)
 </script>
 
 <template>
@@ -143,25 +396,33 @@ onMounted(fetchData)
       <!-- My Stats Section -->
       <div v-if="myStats" class="mb-6 sm:mb-8">
         <h2 class="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-slate-700">我的会议统计</h2>
-        <div class="grid grid-cols-3 gap-2 sm:gap-4 md:grid-cols-3">
-          <el-card shadow="hover" class="!border-slate-100" body-class="!p-0">
-            <div class="flex flex-col items-center py-2 sm:py-3 text-center">
-              <span class="text-lg sm:text-2xl font-bold text-slate-800">{{ myStats.totalMeetings }}</span>
-              <span class="mt-1 text-[10px] sm:text-xs text-slate-500">参与会议</span>
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
+          <div class="grid grid-cols-1 gap-2 sm:gap-4 h-full">
+            <el-card shadow="hover" class="!border-slate-100 h-full flex flex-col justify-center" body-class="!p-0 h-full">
+              <div class="flex flex-col items-center py-4 text-center">
+                <span class="text-xl sm:text-3xl font-bold text-slate-800">{{ myStats.totalMeetings }}</span>
+                <span class="mt-1 text-xs text-slate-500">参与会议</span>
+              </div>
+            </el-card>
+            <el-card shadow="hover" class="!border-slate-100 h-full flex flex-col justify-center" body-class="!p-0 h-full">
+              <div class="flex flex-col items-center py-4 text-center">
+                <span class="text-base sm:text-2xl font-bold text-slate-800 whitespace-nowrap overflow-hidden text-ellipsis px-1 w-full">{{ formatShortDuration(myStats.totalDurationMs) }}</span>
+                <span class="mt-1 text-xs text-slate-500">总参会时长</span>
+              </div>
+            </el-card>
+          </div>
+          <el-card shadow="hover" class="!border-slate-100 col-span-1" header="参会角色">
+            <div ref="roleChart" class="w-full h-40 sm:h-48"></div>
           </el-card>
-          <el-card shadow="hover" class="!border-slate-100" body-class="!p-0">
-            <div class="flex flex-col items-center py-2 sm:py-3 text-center">
-              <span class="text-lg sm:text-2xl font-bold text-slate-800">{{ myStats.meetingsHosted }}</span>
-              <span class="mt-1 text-[10px] sm:text-xs text-slate-500">主持次数</span>
-            </div>
+          <el-card shadow="hover" class="!border-slate-100 col-span-1" header="近期参会时长">
+            <div ref="durationChart" class="w-full h-40 sm:h-48"></div>
           </el-card>
-          <el-card shadow="hover" class="!border-slate-100" body-class="!p-0">
-            <div class="flex flex-col items-center py-2 sm:py-3 text-center">
-              <span class="text-base sm:text-2xl font-bold text-slate-800 whitespace-nowrap overflow-hidden text-ellipsis px-1 w-full">{{ formatShortDuration(myStats.totalDurationMs) }}</span>
-              <span class="mt-1 text-[10px] sm:text-xs text-slate-500">总参会时长</span>
-            </div>
-          </el-card>
+        </div>
+
+        <!-- Trend Section -->
+        <div v-if="trend && trend.days.length" class="mb-6 sm:mb-8">
+          <h2 class="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-slate-700">每日趋势 (近7天)</h2>
+          <div ref="trendChart" class="w-full h-64 sm:h-80 bg-white rounded-lg shadow-sm border border-slate-100 p-2 sm:p-4"></div>
         </div>
 
         <!-- Recent Meetings Table -->
@@ -186,24 +447,6 @@ onMounted(fetchData)
             </el-table-column>
           </el-table>
         </div>
-      </div>
-
-      <!-- Trend Section -->
-      <div v-if="trend && trend.days.length" class="mb-6 sm:mb-8">
-        <h2 class="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-slate-700">每日趋势 (近7天)</h2>
-        <el-table :data="trend.days" stripe size="small" class="w-full text-xs sm:text-sm">
-          <el-table-column prop="date" label="日期" width="120" />
-          <el-table-column label="新增会议数" width="100">
-            <template #default="{ row }">
-              <span class="font-medium text-blue-600">{{ row.meetings }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="活跃参会人数">
-            <template #default="{ row }">
-              <span class="font-medium text-purple-600">{{ row.participants }}</span>
-            </template>
-          </el-table-column>
-        </el-table>
       </div>
 
       <!-- Quality Report Section -->
@@ -247,11 +490,20 @@ onMounted(fetchData)
               </div>
             </div>
             <div v-if="qualityReport.candidateDist && qualityReport.candidateDist.length" class="mt-3 border-t border-slate-100 pt-3">
-              <div class="mb-2 text-[10px] sm:text-xs font-medium text-slate-500">连接类型分布</div>
-              <div class="flex flex-wrap gap-2 sm:gap-3">
-                <div v-for="c in qualityReport.candidateDist" :key="c.type" class="text-xs sm:text-sm">
-                  <el-tag size="small" type="info" class="!text-[10px] sm:!text-xs">{{ candidateTypeLabel(c.type) }}</el-tag>
-                  <span class="ml-1 text-slate-600">{{ c.count }} 次</span>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div class="mb-2 text-[10px] sm:text-xs font-medium text-slate-500">连接类型统计 (WebRTC P2P)</div>
+                  <div class="flex flex-col gap-2 sm:gap-3">
+                    <div v-for="c in qualityReport.candidateDist" :key="c.type" class="text-xs sm:text-sm flex items-center justify-between bg-slate-50 p-2 rounded">
+                      <span>
+                        <el-tag size="small" type="info" class="!text-[10px] sm:!text-xs mr-2">{{ candidateTypeLabel(c.type) }}</el-tag>
+                      </span>
+                      <span class="text-slate-600 font-medium">{{ c.count }} 次</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex justify-center items-center">
+                  <div ref="connectionTypeChart" class="w-full h-40 sm:h-48"></div>
                 </div>
               </div>
             </div>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { ArrowDown, Calendar, Lightning, Monitor, Plus } from '@element-plus/icons-vue'
 import { createMeetingApi, joinMeetingApi } from '@/api/meeting'
 
@@ -45,8 +44,8 @@ const createForm = reactive<CreateMeetingForm>({
 
 const quickActions: QuickAction[] = [
   { title: '加入会议', icon: 'plus' },
-  { title: '创建会议', icon: 'lightning', hasArrow: true },
-  { title: '预定会议', icon: 'calendar', hasArrow: true },
+  { title: '创建会议', icon: 'lightning'},
+  { title: '预定会议', icon: 'calendar'},
   { title: '共享屏幕', icon: 'monitor' },
 ]
 
