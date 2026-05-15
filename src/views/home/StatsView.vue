@@ -106,7 +106,7 @@ function initRoleChart() {
 }
 
 function initDurationChart() {
-  if (!durationChart.value || !myStats.value || myStats.value.recentMeetings.length === 0) return
+  if (!durationChart.value || !myStats.value || !myStats.value.recentMeetings?.length) return
   if (!durationChartInstance) {
     durationChartInstance = echarts.init(durationChart.value)
   }
@@ -426,7 +426,7 @@ function candidateTypeLabel(type: string): string {
         </div>
 
         <!-- Recent Meetings Table -->
-        <div v-if="myStats.recentMeetings.length" class="mt-4 sm:mt-6">
+        <div v-if="myStats.recentMeetings?.length" class="mt-4 sm:mt-6">
           <h3 class="mb-2 sm:mb-3 text-xs sm:text-sm font-medium text-slate-600">最近参与会议</h3>
           <el-table :data="myStats.recentMeetings" stripe size="small" class="w-full text-xs sm:text-sm">
             <el-table-column prop="title" label="会议标题" min-width="120" />
@@ -450,7 +450,7 @@ function candidateTypeLabel(type: string): string {
       </div>
 
       <!-- Quality Report Section -->
-      <div v-if="myStats && myStats.recentMeetings.length" class="mb-6 sm:mb-8">
+      <div v-if="myStats?.recentMeetings?.length" class="mb-6 sm:mb-8">
         <h2 class="mb-3 sm:mb-4 text-base sm:text-lg font-semibold text-slate-700">会议质量报告</h2>
         <div class="mb-3 flex flex-row overflow-x-auto gap-2 scrollbar-none pb-1">
           <el-button

@@ -26,4 +26,17 @@ export function logoutApi(): Promise<void> {
   return request.post<void>('/auth/logout')
 }
 
+export interface RegisterParams {
+  username: string
+  password: string
+  nickname?: string
+  realName?: string
+  email?: string
+  phone?: string
+}
+
+export function registerApi(params: RegisterParams): Promise<void> {
+  return request.post<void>('/users', params)
+}
+
 export type { UserInfo }

@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import LoginForm from '@/component/auth/LoginForm.vue'
+import RegisterForm from '@/component/auth/RegisterForm.vue'
 import { useRouter } from 'vue-router'
 
 const currentYear = new Date().getFullYear()
 const router = useRouter()
 
-function goToRegister(): void {
-  router.push('/register')
+function goToLogin(): void {
+  router.push('/login')
 }
 </script>
 
@@ -27,25 +27,25 @@ function goToRegister(): void {
         </div>
 
         <h1 class="max-w-xl text-4xl font-semibold leading-tight text-white sm:text-5xl">
-          稳定连接每一次远程沟通
+          加入我们，开启远程协作
         </h1>
 
         <p class="max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
-          登录后可快速进入会议、通讯录与录制中心。系统支持账号鉴权、会话状态管理与跨页面同步，适合课程演示和毕业设计场景。
+          注册账号后即可创建和加入会议、管理通讯录以及查看录制记录。只需填写基本信息，快速完成注册。
         </p>
 
         <div class="grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
           <div class="rounded-2xl border border-white/15 bg-white/6 p-4">
-            <p class="text-xs text-slate-400">延迟表现</p>
-            <p class="mt-1 text-lg font-semibold text-cyan-200">&lt; 200ms</p>
+            <p class="text-xs text-slate-400">高清画质</p>
+            <p class="mt-1 text-lg font-semibold text-cyan-200">1080p</p>
           </div>
           <div class="rounded-2xl border border-white/15 bg-white/6 p-4">
-            <p class="text-xs text-slate-400">同步能力</p>
-            <p class="mt-1 text-lg font-semibold text-blue-200">实时状态</p>
+            <p class="text-xs text-slate-400">多端同步</p>
+            <p class="mt-1 text-lg font-semibold text-blue-200">实时互通</p>
           </div>
           <div class="rounded-2xl border border-white/15 bg-white/6 p-4">
-            <p class="text-xs text-slate-400">会议记录</p>
-            <p class="mt-1 text-lg font-semibold text-emerald-200">自动归档</p>
+            <p class="text-xs text-slate-400">安全加密</p>
+            <p class="mt-1 text-lg font-semibold text-emerald-200">端到端</p>
           </div>
         </div>
       </section>
@@ -53,20 +53,21 @@ function goToRegister(): void {
       <section
         class="mx-auto w-full max-w-md rounded-3xl border border-white/15 bg-white/95 p-6 shadow-2xl shadow-cyan-950/20 backdrop-blur sm:p-8">
         <header class="mb-6 space-y-1">
-          <h2 class="text-2xl font-semibold text-slate-900">欢迎登录</h2>
-          <p class="text-sm text-slate-500">请输入账号信息继续使用系统</p>
+          <h2 class="text-2xl font-semibold text-slate-900">创建账号</h2>
+          <p class="text-sm text-slate-500">填写信息完成注册</p>
         </header>
 
-        <LoginForm />
+        <RegisterForm />
 
         <p class="mt-6 text-center text-sm text-slate-400">
-          还没有账号？
-          <el-button link class="text-blue-500! p-0! text-sm!" @click="goToRegister">
-            立即注册
+          已有账号？
+          <el-button link class="text-blue-500! p-0! text-sm!" @click="goToLogin">
+            立即登录
           </el-button>
         </p>
 
-        <p class="mt-4 text-center text-xs text-slate-400">&copy; {{ currentYear }} Video Conference. All rights reserved.
+        <p class="mt-4 text-center text-xs text-slate-400">
+          &copy; {{ currentYear }} Video Conference. All rights reserved.
         </p>
       </section>
     </div>

@@ -12,6 +12,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/register',
+    name: 'register',
+    component: () => import('@/views/auth/RegisterView.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/',
     component: HomeLayout,
     meta: { requiresAuth: true },
@@ -69,7 +75,7 @@ router.beforeEach(to => {
     return { name: 'login' }
   }
 
-  if (to.name === 'login' && authStore.isAuthenticated) {
+  if ((to.name === 'login' || to.name === 'register') && authStore.isAuthenticated) {
     return { name: 'home' }
   }
 
